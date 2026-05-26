@@ -1,0 +1,36 @@
+[api]
+enabled = true
+port = 54321
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["https://qfgrmwvqykpgkncigjnt.supabase.co"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+
+[functions.gmail-initial-sync]
+verify_jwt = true
+
+[functions.generate-insights]
+verify_jwt = true
+
+[functions.parse-email-transactions]
+verify_jwt = true
+
+[functions.gmail-pubsub-webhook]
+verify_jwt = false
+
+[functions.parse-statement]
+verify_jwt = true
