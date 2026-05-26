@@ -35,9 +35,13 @@ export default function Syncing() {
     // Wait until Supabase has finished resolving the OAuth session
     if (authLoading) return;
     // If auth resolved but no user, redirect to landing
+    // Use a small delay to give onAuthStateChange one more tick to fire
+    // in case the PKCE exchange is still completing
     if (!user) {
-      navigate("/");
-      return;
+      const timeout = setTimeout(() => {
+        if (!user) navigate("/");
+      }, 500);
+      return () => clearTimeout(timeout);
     }
     if (hasSynced.current) return;
     hasSynced.current = true;

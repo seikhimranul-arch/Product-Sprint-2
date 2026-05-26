@@ -7,7 +7,7 @@ export default function Navbar() {
   const isDashboard = location.pathname === "/dashboard";
 
   // Hide navbar on sync screen
-  if (location.pathname === "/sync") return null;
+  if (location.pathname === "/sync" || location.pathname === "/auth/callback") return null;
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-black/50 backdrop-blur-xl border-b border-white/10 shadow-sm transition-all duration-300">
