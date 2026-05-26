@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function Footer() {
   return (
     <footer className="w-full py-12 border-t border-white/5 bg-black mt-auto z-10 relative">
@@ -7,22 +9,22 @@ export default function Footer() {
             FINTLER
           </div>
           <div className="text-body-sm text-on-surface-variant">
-            © 2024 FintLer AI. Precision Clarity for Indian Markets.
+            © 2024–2026 FintLer AI. Precision Clarity for Indian Markets.
           </div>
         </div>
         <div className="flex flex-wrap gap-x-8 gap-y-4 md:justify-end items-center">
-          <a
-            href="#"
+          <Link
+            to="/privacy"
             className="text-body-sm text-on-surface-variant hover:text-tertiary transition-colors"
           >
             Privacy Policy
-          </a>
-          <a
-            href="#"
+          </Link>
+          <Link
+            to="/terms"
             className="text-body-sm text-on-surface-variant hover:text-tertiary transition-colors"
           >
             Terms of Service
-          </a>
+          </Link>
           <a
             href="#"
             className="text-body-sm text-on-surface-variant hover:text-tertiary transition-colors"

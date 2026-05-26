@@ -5,6 +5,8 @@ import Navbar from "./components/Navbar";
 import Landing from "./pages/Landing";
 import Syncing from "./pages/Syncing";
 import Dashboard from "./pages/Dashboard";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -15,6 +17,8 @@ function AnimatedRoutes() {
         <Route path="/" element={<Landing />} />
         <Route path="/sync" element={<Syncing />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
       </Routes>
     </AnimatePresence>
   );
@@ -34,3 +38,4 @@ function App() {
 }
 
 export default App;
+

@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Footer from "../components/Footer";
 import { useAuth } from "../contexts/AuthContext";
@@ -14,11 +14,26 @@ export default function Landing() {
   const { user, signInWithGoogle } = useAuth();
   const orbsRef = useRef([]);
 
+  // Consent state
+  const [consentLegal, setConsentLegal] = useState(false);
+  const [consentGmail, setConsentGmail] = useState(false);
+  const [consentEarlyAccess, setConsentEarlyAccess] = useState(false);
+  const [showConsentWarning, setShowConsentWarning] = useState(false);
+
+  const allConsented = consentLegal && consentGmail && consentEarlyAccess;
+
   useEffect(() => {
     if (user) {
       navigate("/dashboard");
     }
   }, [user, navigate]);
+
+  // Clear warning when all boxes are checked
+  useEffect(() => {
+    if (allConsented) {
+      setShowConsentWarning(false);
+    }
+  }, [allConsented]);
 
   // Parallax orbs on mouse move
   useEffect(() => {
@@ -37,9 +52,12 @@ export default function Landing() {
   }, []);
 
   const handleGoogleAuth = async () => {
+    if (!allConsented) {
+      setShowConsentWarning(true);
+      return;
+    }
     const { error } = await signInWithGoogle();
     if (!error) {
-      // In demo mode (no Supabase), navigate directly
       navigate("/sync");
     }
   };
@@ -70,6 +88,14 @@ export default function Landing() {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
+          {/* Early Access Badge */}
+          <div className="flex justify-center mb-6">
+            <span className="early-access-badge">
+              <span className="material-symbols-outlined text-[14px]">bolt</span>
+              Early Access — Limited Users
+            </span>
+          </div>
+
           <h1 className="text-display text-on-surface mb-6 drop-shadow-2xl">
             Cure Salary Day Anxiety.
             <br />
@@ -82,15 +108,92 @@ export default function Landing() {
             Precision clarity for your finances. Zero manual data entry.
           </p>
 
+          {/* Consent Card */}
+          <motion.div
+            className="max-w-md mx-auto mb-6"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <div className={`glass-card rounded-xl p-6 text-left space-y-4 transition-all duration-300 ${showConsentWarning ? "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]" : ""}`}>
+              <div className="text-label-caps text-on-surface-variant/60 mb-1">
+                Before you continue
+              </div>
+
+              {/* Consent 1: Legal */}
+              <label className="flex items-start gap-3 cursor-pointer group" id="consent-legal">
+                <input
+                  type="checkbox"
+                  className="consent-checkbox mt-0.5"
+                  checked={consentLegal}
+                  onChange={(e) => setConsentLegal(e.target.checked)}
+                />
+                <span className="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                  I agree to the{" "}
+                  <Link to="/privacy" className="text-tertiary underline underline-offset-2 hover:opacity-80">Privacy Policy</Link>
+                  {" "}and{" "}
+                  <Link to="/terms" className="text-tertiary underline underline-offset-2 hover:opacity-80">Terms of Service</Link>
+                </span>
+              </label>
+
+              {/* Consent 2: Gmail Access */}
+              <label className="flex items-start gap-3 cursor-pointer group" id="consent-gmail">
+                <input
+                  type="checkbox"
+                  className="consent-checkbox mt-0.5"
+                  checked={consentGmail}
+                  onChange={(e) => setConsentGmail(e.target.checked)}
+                />
+                <span className="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                  I consent to FintLer accessing my Gmail <strong className="text-on-surface">(read-only)</strong> to parse bank transaction alerts
+                </span>
+              </label>
+
+              {/* Consent 3: Early Access */}
+              <label className="flex items-start gap-3 cursor-pointer group" id="consent-early-access">
+                <input
+                  type="checkbox"
+                  className="consent-checkbox mt-0.5"
+                  checked={consentEarlyAccess}
+                  onChange={(e) => setConsentEarlyAccess(e.target.checked)}
+                />
+                <span className="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                  I understand this is an early-access product and my feedback helps improve FintLer
+                </span>
+              </label>
+
+              {/* Warning message */}
+              {showConsentWarning && (
+                <motion.div
+                  className="flex items-center gap-2 text-red-400 text-body-sm pt-1"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <span className="material-symbols-outlined text-[16px]">warning</span>
+                  Please agree to all terms before continuing
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* CTA Button */}
           <div className="flex flex-col items-center space-y-4">
             <button
               onClick={handleGoogleAuth}
               id="google-auth-button"
-              className="btn-ghost flex items-center space-x-3 px-8 py-4 rounded-xl text-on-surface bg-surface-container-high/50 hover:bg-surface-container-high w-full max-w-md justify-center group relative overflow-hidden cursor-pointer"
+              disabled={!allConsented}
+              className={`flex items-center space-x-3 px-8 py-4 rounded-xl w-full max-w-md justify-center group relative overflow-hidden transition-all duration-300 ${
+                allConsented
+                  ? "btn-ghost text-on-surface bg-surface-container-high/50 hover:bg-surface-container-high cursor-pointer"
+                  : "text-on-surface-variant/40 bg-surface-container/30 border border-white/5 cursor-not-allowed"
+              }`}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              {allConsented && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              )}
               <svg
-                className="w-5 h-5"
+                className={`w-5 h-5 transition-opacity ${allConsented ? "opacity-100" : "opacity-30"}`}
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
