@@ -1,15 +1,13 @@
 /*
-  FintLer — generate-insights Edge Function
+  FintLer — generate-insights Edge Function (v2 — schema aligned)
   
-  Reads the authenticated user's last 90 days of parsed transactions from the
-  `transactions` table, sends them to Gemini AI for behavioral analysis, and
-  writes the structured output into the `insights` table. Also assigns/updates
-  the user's Spending Personality in the `profiles` table.
+  Reads the authenticated user's recent transactions, sends them to Gemini AI
+  for behavioral analysis, and writes structured insights into the `insights` table.
   
-  Triggered by:
-    - Syncing.jsx (after initial email sync)
-    - gmail-pubsub-webhook (after each new transaction is parsed)
-    - Dashboard.jsx "Refresh Insights" button
+  Schema:
+    transactions: amount (NUMERIC), type, category, merchant, transaction_date
+    insights: type (text), title (text), body (text), severity (text)
+    profiles: full_name (no spending_personality column)
   
   Env vars required:
     SUPABASE_URL
@@ -44,10 +42,15 @@ Output STRICT JSON with these exact keys:
 
 {
   "spending_personality": "one of the personality names provided",
-  "summary_text": "One sentence summarizing total spend and biggest category. Use ₹ symbol.",
-  "category_alert_text": "One sentence flagging the highest-spend or fastest-growing category. Include amount.",
-  "behavioral_trigger_text": "One sentence identifying WHEN the user spends most (day/time pattern). Be specific.",
-  "recommendation_text": "One actionable, specific, non-judgmental recommendation. Include a rupee target."
+  "summary_title": "Short title for the monthly summary (e.g. 'You spent ₹42,500 via UPI this month')",
+  "summary_body": "One sentence elaborating on the top category or trend",
+  "alert_title": "Short title flagging highest-spend or fastest-growing category",
+  "alert_body": "One sentence with the amount and category context",
+  "alert_severity": "low" | "medium" | "high",
+  "behavioral_title": "Short title for a behavioral pattern (e.g. 'Moment of Impact')",
+  "behavioral_body": "One sentence identifying WHEN the user spends most (day/time pattern). Be specific.",
+  "recommendation_title": "Short actionable goal title",
+  "recommendation_body": "One specific, non-judgmental recommendation with a rupee target"
 }
 
 Personality options: ${SPENDING_PERSONALITIES.join(", ")}
@@ -91,10 +94,10 @@ Deno.serve(async (req) => {
 
     const { data: transactions, error: txErr } = await supabase
       .from("transactions")
-      .select("amount_inr, type, merchant, category, transacted_at, day_of_week, hour_of_day, bank_name")
+      .select("amount, type, merchant, category, transaction_date")
       .eq("user_id", targetUserId)
-      .gte("transacted_at", ninetyDaysAgo)
-      .order("transacted_at", { ascending: false })
+      .gte("transaction_date", ninetyDaysAgo)
+      .order("transaction_date", { ascending: false })
       .limit(300);
 
     if (txErr || !transactions || transactions.length === 0) {
@@ -106,31 +109,39 @@ Deno.serve(async (req) => {
 
     // ----- BUILD ANALYTICS SUMMARY FOR GEMINI -----
     const debits = transactions.filter((t) => t.type === "debit");
-    const totalSpend = debits.reduce((s, t) => s + t.amount_inr, 0);
+    const totalSpend = debits.reduce((s, t) => s + parseFloat(t.amount || 0), 0);
 
     // Category breakdown
     const categoryMap: Record<string, number> = {};
     for (const t of debits) {
-      const cat = t.category || "other";
-      categoryMap[cat] = (categoryMap[cat] || 0) + t.amount_inr;
+      const cat = t.category || "Uncategorized";
+      categoryMap[cat] = (categoryMap[cat] || 0) + parseFloat(t.amount || 0);
     }
 
-    // Day-of-week breakdown
+    // Day-of-week breakdown (computed from transaction_date)
+    const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
     const dayMap: Record<string, number> = {};
     for (const t of debits) {
-      if (t.day_of_week) dayMap[t.day_of_week] = (dayMap[t.day_of_week] || 0) + t.amount_inr;
+      if (t.transaction_date) {
+        const d = new Date(t.transaction_date);
+        const dayName = dayNames[d.getDay()];
+        dayMap[dayName] = (dayMap[dayName] || 0) + parseFloat(t.amount || 0);
+      }
     }
 
-    // Hour-of-day breakdown
+    // Hour-of-day breakdown (computed from transaction_date)
     const hourMap: Record<number, number> = {};
     for (const t of debits) {
-      if (t.hour_of_day !== null) hourMap[t.hour_of_day] = (hourMap[t.hour_of_day] || 0) + t.amount_inr;
+      if (t.transaction_date) {
+        const hour = new Date(t.transaction_date).getHours();
+        hourMap[hour] = (hourMap[hour] || 0) + parseFloat(t.amount || 0);
+      }
     }
 
     // Top merchants
     const merchantMap: Record<string, number> = {};
     for (const t of debits) {
-      if (t.merchant) merchantMap[t.merchant] = (merchantMap[t.merchant] || 0) + t.amount_inr;
+      if (t.merchant) merchantMap[t.merchant] = (merchantMap[t.merchant] || 0) + parseFloat(t.amount || 0);
     }
     const topMerchants = Object.entries(merchantMap)
       .sort(([, a], [, b]) => b - a)
@@ -150,9 +161,9 @@ Deno.serve(async (req) => {
       top_merchants: topMerchants,
       sample_recent_transactions: debits.slice(0, 20).map((t) => ({
         merchant: t.merchant,
-        amount: `₹${t.amount_inr}`,
+        amount: `₹${t.amount}`,
         category: t.category,
-        when: t.transacted_at,
+        when: t.transaction_date,
       })),
     };
 
@@ -193,34 +204,61 @@ Deno.serve(async (req) => {
     }
 
     // ----- WRITE TO DATABASE -----
-    // Update spending personality in profiles
-    await supabase
-      .from("profiles")
-      .update({ spending_personality: aiOutput.spending_personality })
-      .eq("id", targetUserId);
+    // Delete old insights for this user to avoid stale data
+    await supabase.from("insights").delete().eq("user_id", targetUserId);
 
-    // Insert new insight record
-    const { data: newInsight, error: insightErr } = await supabase
-      .from("insights")
-      .insert({
+    // Insert multiple insight rows by type (matches the schema: type, title, body, severity)
+    const insightRows = [
+      {
         user_id: targetUserId,
-        summary_text: aiOutput.summary_text,
-        category_alert_text: aiOutput.category_alert_text,
-        behavioral_trigger_text: aiOutput.behavioral_trigger_text,
-        recommendation_text: aiOutput.recommendation_text,
-      })
-      .select("*")
-      .single();
+        type: "personality",
+        title: aiOutput.spending_personality || "The Mindful Spender",
+        body: `Based on analysis of ${debits.length} transactions over the last 90 days.`,
+        severity: "info",
+      },
+      {
+        user_id: targetUserId,
+        type: "summary",
+        title: aiOutput.summary_title || `You spent ₹${Math.round(totalSpend).toLocaleString("en-IN")} recently`,
+        body: aiOutput.summary_body || "Insights generated from your latest sync.",
+        severity: "info",
+      },
+      {
+        user_id: targetUserId,
+        type: "alert",
+        title: aiOutput.alert_title || "No critical alerts",
+        body: aiOutput.alert_body || "Your spending looks healthy.",
+        severity: aiOutput.alert_severity || "low",
+      },
+      {
+        user_id: targetUserId,
+        type: "behavioral",
+        title: aiOutput.behavioral_title || "Spending Pattern",
+        body: aiOutput.behavioral_body || "Need more data to identify patterns.",
+        severity: "info",
+      },
+      {
+        user_id: targetUserId,
+        type: "goal",
+        title: aiOutput.recommendation_title || "Set a savings goal",
+        body: aiOutput.recommendation_body || "Try saving 10% of your monthly spending.",
+        severity: "info",
+      },
+    ];
+
+    const { error: insightErr } = await supabase
+      .from("insights")
+      .insert(insightRows);
 
     if (insightErr) {
       console.error("Insight insert error:", insightErr);
-      return jsonRes({ error: "Failed to save insight." }, 500);
+      return jsonRes({ error: "Failed to save insights.", detail: insightErr.message }, 500);
     }
 
     return jsonRes({
       success: true,
-      insight: newInsight,
       spending_personality: aiOutput.spending_personality,
+      insights_created: insightRows.length,
       transactions_analyzed: debits.length,
     });
 

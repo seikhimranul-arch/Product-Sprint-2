@@ -58,31 +58,26 @@ export default function Syncing() {
 
       if (supabase && session?.access_token) {
         try {
-          // Save the Gmail OAuth tokens into email_connections table
-          // The access_token from the OAuth session IS the Gmail token
-          const { error: upsertErr } = await supabase
-            .from("email_connections")
-            .upsert({
-              user_id: user.id,
-              provider: "gmail",
-              access_token: session.provider_token || session.access_token,
-              refresh_token: session.provider_refresh_token || "",
-              token_expiry: session.expires_at
-                ? new Date(session.expires_at * 1000).toISOString()
-                : null,
-              connected_at: new Date().toISOString(),
-            });
-
-          if (upsertErr) console.warn("email_connections upsert:", upsertErr.message);
+          // Mark Gmail as connected in the profiles table
+          await supabase
+            .from("profiles")
+            .update({ gmail_sync_enabled: true })
+            .eq("id", user.id);
 
           await delay(1200);
           animateTo(SYNC_STAGES[2].pct);
           setStageIndex(2);
 
           // Call the gmail-initial-sync edge function
+          // Pass the provider_token (Gmail OAuth token) so the function can read emails
           const { data: syncData, error: syncErr } = await supabase.functions.invoke(
             "gmail-initial-sync",
-            { body: { user_id: user.id } }
+            {
+              body: {
+                user_id: user.id,
+                provider_token: session.provider_token || "",
+              },
+            }
           );
 
           if (syncErr) {

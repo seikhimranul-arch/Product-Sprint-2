@@ -1,15 +1,16 @@
 /*
-  FintLer — gmail-initial-sync Edge Function
+  FintLer — gmail-initial-sync Edge Function (v2 — schema aligned)
   
-  Fetches the last 90 days of bank alert emails from Gmail using the user's
-  stored OAuth access token, then parses each one via parse-email-transactions.
+  Fetches the last 90 days of bank alert emails from Gmail using the
+  provider_token passed from the frontend session, then parses each
+  one via parse-email-transactions.
   
-  Triggered by: Syncing.jsx after a successful Google OAuth login.
+  Schema: profiles (gmail_sync_enabled, gmail_history_id)
+  No email_connections table — tokens come from the frontend session.
   
   Env vars required:
     SUPABASE_URL
     SUPABASE_SERVICE_ROLE_KEY
-    GEMINI_API_KEY
 */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -55,34 +56,15 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
     if (authErr || !user) return jsonRes({ error: "Invalid session." }, 401);
 
-    // ----- GET STORED GMAIL TOKEN -----
-    const { data: emailConn, error: connErr } = await supabase
-      .from("email_connections")
-      .select("access_token, refresh_token, token_expiry")
-      .eq("user_id", user.id)
-      .is("revoked_at", null)
-      .single();
+    // ----- GET GMAIL TOKEN FROM REQUEST BODY -----
+    const body = await req.json();
+    const providerToken = body?.provider_token;
 
-    if (connErr || !emailConn) {
-      return jsonRes({ error: "Gmail not connected. Please re-authenticate." }, 400);
+    if (!providerToken) {
+      return jsonRes({ error: "No Gmail token provided. Please re-authenticate." }, 400);
     }
 
-    let accessToken = emailConn.access_token;
-
-    // Refresh token if expired
-    if (emailConn.token_expiry && new Date(emailConn.token_expiry) < new Date()) {
-      const refreshed = await refreshAccessToken(emailConn.refresh_token);
-      if (refreshed.access_token) {
-        accessToken = refreshed.access_token;
-        await supabase
-          .from("email_connections")
-          .update({
-            access_token: refreshed.access_token,
-            token_expiry: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
-          })
-          .eq("user_id", user.id);
-      }
-    }
+    const accessToken = providerToken;
 
     // ----- FETCH EMAIL LIST FROM GMAIL -----
     const query = buildGmailQuery();
@@ -95,7 +77,7 @@ Deno.serve(async (req) => {
     if (!listRes.ok) {
       const errBody = await listRes.text();
       console.error("Gmail list error:", errBody);
-      return jsonRes({ error: "Failed to fetch emails from Gmail." }, 502);
+      return jsonRes({ error: "Failed to fetch emails from Gmail.", detail: errBody }, 502);
     }
 
     const listData = await listRes.json();
@@ -112,11 +94,11 @@ Deno.serve(async (req) => {
 
     for (const msg of messages) {
       try {
-        // Check dedup — skip if already parsed
+        // Check dedup — skip if already parsed (source_email_id is the Gmail message ID)
         const { data: existing } = await supabase
           .from("transactions")
           .select("id")
-          .eq("email_message_id", msg.id)
+          .eq("source_email_id", msg.id)
           .single();
 
         if (existing) { skipped++; continue; }
@@ -146,7 +128,8 @@ Deno.serve(async (req) => {
             body: {
               raw_email_body: bodyText,
               bank_domain: senderDomain,
-              email_message_id: msg.id,
+              source_email_id: msg.id,
+              user_id: user.id,
             },
           }
         );
@@ -161,18 +144,23 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Store Gmail history ID for future push notifications
-    const { data: profileData } = await fetch(
-      "https://gmail.googleapis.com/gmail/v1/users/me/profile",
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    ).then((r) => r.json());
+    // Store Gmail history ID in profiles for future push notifications
+    try {
+      const profileRes = await fetch(
+        "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      const profileData = await profileRes.json();
+      const historyId = profileData?.historyId;
 
-    const historyId = profileData?.historyId || listData.nextPageToken;
-    if (historyId) {
-      await supabase
-        .from("email_connections")
-        .update({ gmail_history_id: String(historyId) })
-        .eq("user_id", user.id);
+      if (historyId) {
+        await supabase
+          .from("profiles")
+          .update({ gmail_history_id: String(historyId), gmail_sync_enabled: true })
+          .eq("id", user.id);
+      }
+    } catch (e) {
+      console.warn("Failed to store history ID:", e);
     }
 
     return jsonRes({ success: true, total: messages.length, parsed, skipped, errors });
@@ -227,18 +215,4 @@ function extractEmailBody(payload: any): string {
   }
 
   return "";
-}
-
-async function refreshAccessToken(refreshToken: string) {
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: Deno.env.get("GOOGLE_CLIENT_ID") ?? "",
-      client_secret: Deno.env.get("GOOGLE_CLIENT_SECRET") ?? "",
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
-  return res.json();
 }

@@ -1,10 +1,17 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut, signInWithGoogle, loading } = useAuth();
-  const isDashboard = location.pathname === "/dashboard";
+  
+  const isDashboard = ["/dashboard", "/analytics", "/assets"].includes(location.pathname);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   // Hide navbar on sync screen
   if (location.pathname === "/sync" || location.pathname === "/auth/callback") return null;
@@ -20,16 +27,31 @@ export default function Navbar() {
         </Link>
 
         {isDashboard && (
-          <div className="hidden md:flex gap-8">
-            <a href="#" className="text-primary font-bold border-b-2 border-primary pb-1 text-headline-md">
+          <div className="hidden md:flex items-center gap-6 text-label-caps ml-12">
+            <Link
+              to="/dashboard"
+              className={`${
+                location.pathname === "/dashboard" ? "text-on-surface" : "text-on-surface-variant hover:text-on-surface"
+              } transition-colors`}
+            >
               Dashboard
-            </a>
-            <a href="#" className="text-on-surface-variant font-medium hover:text-primary transition-colors text-headline-md">
+            </Link>
+            <Link
+              to="/analytics"
+              className={`${
+                location.pathname === "/analytics" ? "text-on-surface" : "text-on-surface-variant hover:text-on-surface"
+              } transition-colors`}
+            >
               Analytics
-            </a>
-            <a href="#" className="text-on-surface-variant font-medium hover:text-primary transition-colors text-headline-md">
+            </Link>
+            <Link
+              to="/assets"
+              className={`${
+                location.pathname === "/assets" ? "text-on-surface" : "text-on-surface-variant hover:text-on-surface"
+              } transition-colors`}
+            >
               Assets
-            </a>
+            </Link>
           </div>
         )}
 
@@ -46,7 +68,7 @@ export default function Navbar() {
                   : "U"}
               </div>
               <button
-                onClick={signOut}
+                onClick={handleSignOut}
                 className="btn-ghost px-3 py-1.5 rounded-lg text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer"
               >
                 Sign Out

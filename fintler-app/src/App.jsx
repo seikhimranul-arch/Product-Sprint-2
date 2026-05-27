@@ -8,6 +8,8 @@ import Dashboard from "./pages/Dashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import AuthCallback from "./pages/AuthCallback";
+import Analytics from "./pages/Analytics";
+import Assets from "./pages/Assets";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -18,6 +20,8 @@ function AnimatedRoutes() {
         <Route path="/" element={<Landing />} />
         <Route path="/sync" element={<Syncing />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/assets" element={<Assets />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
