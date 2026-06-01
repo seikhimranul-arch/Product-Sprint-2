@@ -90,6 +90,23 @@ function regexParse(body: string, bankDomain: string): ParsedData | null {
   const upiM = b.match(/(?:Rs|INR)[.\s]*([0-9,]+(?:\.[0-9]{1,2})?)[\s\S]{0,80}?(debited|credited)[\s\S]{0,100}?(?:VPA|UPI ID|to|Info)[:\s]+([a-zA-Z0-9@.\-_]+)/i);
   if (upiM) return buildResult(upiM[1], upiM[2], upiM[3], b);
 
+  // ── UNIVERSAL FALLBACK — catches any bank we don't have specific regex for ──
+  // Pattern 1: "Rs.XXX debited/credited ... to/from MERCHANT"
+  const uni1 = b.match(/(?:Rs\.?|INR\.?)\s*([0-9,]+(?:\.[0-9]{1,2})?)\s+(?:has been\s+)?(debited|credited)[\s\S]{0,120}?(?:to|from|at|for|Info:?|VPA:?|towards)\s+([^\n\r,]{3,60})/i);
+  if (uni1) return buildResult(uni1[1], uni1[2], uni1[3], b);
+
+  // Pattern 2: "debited/credited ... Rs.XXX"  (type first, then amount)
+  const uni2 = b.match(/(debited|credited)\s+(?:with\s+)?(?:Rs\.?|INR\.?)\s*([0-9,]+(?:\.[0-9]{1,2})?)[\s\S]{0,120}?(?:to|from|at|for|Info:?|VPA:?|towards)\s+([^\n\r,]{3,60})/i);
+  if (uni2) return buildResult(uni2[2], uni2[1], uni2[3], b);
+
+  // Pattern 3: Amount + type only (no merchant — still useful)
+  const uni3 = b.match(/(?:Rs\.?|INR\.?)\s*([0-9,]+(?:\.[0-9]{1,2})?)\s+(?:has been\s+)?(debited|credited)/i);
+  if (uni3) return buildResult(uni3[1], uni3[2], null, b);
+
+  // Pattern 4: "spent Rs.XXX on your card" (credit card alerts)
+  const cc = b.match(/(?:spent|charged|payment of)\s+(?:Rs\.?|INR\.?)\s*([0-9,]+(?:\.[0-9]{1,2})?)\s+(?:on|at|for)\s+([^\n\r,]{3,60})/i);
+  if (cc) return buildResult(cc[1], "debit", cc[2], b);
+
   return null;
 }
 
