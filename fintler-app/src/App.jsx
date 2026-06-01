@@ -10,6 +10,8 @@ import TermsOfService from "./pages/TermsOfService";
 import AuthCallback from "./pages/AuthCallback";
 import Analytics from "./pages/Analytics";
 import Assets from "./pages/Assets";
+import Waitlist from "./pages/Waitlist";
+import NotFound from "./pages/NotFound";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -25,6 +27,8 @@ function AnimatedRoutes() {
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/waitlist" element={<Waitlist />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>
   );
@@ -44,4 +48,3 @@ function App() {
 }
 
 export default App;
-

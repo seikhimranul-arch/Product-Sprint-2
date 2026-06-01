@@ -224,6 +224,15 @@ export default function Landing() {
               </span>
               <span>We only read bank alert emails. Read-only access.</span>
             </div>
+
+            <div className="mt-2">
+              <Link
+                to="/waitlist"
+                className="text-body-sm text-on-surface-variant/60 hover:text-tertiary transition-colors"
+              >
+                Don't have access yet? <span className="underline underline-offset-2">Join the waitlist →</span>
+              </Link>
+            </div>
           </div>
         </motion.div>
 

@@ -39,10 +39,15 @@ export function AuthProvider({ children }) {
       provider: "google",
       options: {
         scopes: "https://www.googleapis.com/auth/gmail.readonly",
+        // Request offline access so Google returns a refresh_token.
+        // This lets us re-sync Gmail later without re-authenticating.
+        // "consent" forces the consent screen every time so we always get the refresh token.
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent",
+        },
         // Redirect to /auth/callback — a dedicated route that waits for
         // the session to resolve before navigating to /sync.
-        // This avoids the race condition where /sync sees loading=false
-        // but the hash token exchange hasn't completed yet.
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });

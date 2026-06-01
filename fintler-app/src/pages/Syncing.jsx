@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
@@ -20,6 +20,7 @@ export default function Syncing() {
   const [progress, setProgress] = useState(0);
   const [syncError, setSyncError] = useState(null);
   const [syncComplete, setSyncComplete] = useState(false);
+  const [parsedCount, setParsedCount] = useState(0);
   const progressBarRef = useRef(null);
   const hasSynced = useRef(false);
 
@@ -35,8 +36,6 @@ export default function Syncing() {
     // Wait until Supabase has finished resolving the OAuth session
     if (authLoading) return;
     // If auth resolved but no user, redirect to landing
-    // Use a small delay to give onAuthStateChange one more tick to fire
-    // in case the PKCE exchange is still completing
     if (!user) {
       const timeout = setTimeout(() => {
         if (!user) navigate("/");
@@ -47,12 +46,12 @@ export default function Syncing() {
     hasSynced.current = true;
 
     const run = async () => {
-      // Stage 0 → 1: Connecting
+      // Stage 0: Connecting
       animateTo(SYNC_STAGES[0].pct);
       setStageIndex(0);
       await delay(1500);
 
-      // Stage 1: Trigger gmail-initial-sync if we have a real session
+      // Stage 1: Fetching emails
       animateTo(SYNC_STAGES[1].pct);
       setStageIndex(1);
 
@@ -68,20 +67,31 @@ export default function Syncing() {
           animateTo(SYNC_STAGES[2].pct);
           setStageIndex(2);
 
-          // Call the gmail-initial-sync edge function
-          // Pass the provider_token (Gmail OAuth token) so the function can read emails
+          // Call gmail-initial-sync with BOTH tokens so the backend can store them
           const { data: syncData, error: syncErr } = await supabase.functions.invoke(
             "gmail-initial-sync",
             {
               body: {
                 user_id: user.id,
                 provider_token: session.provider_token || "",
+                provider_refresh_token: session.provider_refresh_token || "",
               },
             }
           );
 
           if (syncErr) {
             console.warn("gmail-initial-sync:", syncErr.message);
+            setSyncError("Gmail sync encountered an issue. Your existing data is safe.");
+          }
+
+          // Extract parsed count for the success message
+          if (syncData?.parsed) {
+            setParsedCount(syncData.parsed);
+          }
+
+          if (syncData?.error && syncData.error.includes("No Gmail token")) {
+            setSyncError("Gmail token expired. Please sign out and sign in again.");
+            return;
           }
 
           await delay(1200);
@@ -93,15 +103,21 @@ export default function Syncing() {
           animateTo(SYNC_STAGES[4].pct);
           setStageIndex(4);
 
-          await supabase.functions.invoke("generate-insights", {
+          const { error: insightErr } = await supabase.functions.invoke("generate-insights", {
             body: { user_id: user.id },
           });
 
+          if (insightErr) {
+            console.warn("generate-insights:", insightErr.message);
+            // Non-fatal — transactions are still saved
+          }
+
         } catch (e) {
-          console.warn("Sync step failed (non-fatal):", e);
+          console.warn("Sync step failed:", e);
+          setSyncError("Something went wrong during sync. Your data is safe.");
         }
       } else {
-        // Demo mode: simulate progress
+        // No session token — skip to dashboard
         await delay(1200);
         animateTo(SYNC_STAGES[2].pct);
         setStageIndex(2);
@@ -119,14 +135,44 @@ export default function Syncing() {
       setSyncComplete(true);
 
       // Navigate to dashboard after brief pause showing "ready"
-      await delay(1800);
+      await delay(2000);
       navigate("/dashboard");
     };
 
     run();
   }, [authLoading, navigate, session, user]);
 
-  const currentMsg = SYNC_STAGES[stageIndex]?.msg;
+  // Error state
+  if (syncError) {
+    return (
+      <div className="bg-black text-on-background flex flex-col justify-center items-center h-screen overflow-hidden relative px-6">
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-error/5 rounded-full blur-[120px] z-0 pointer-events-none" />
+        <div className="grain-overlay z-0" />
+
+        <div className="relative z-10 flex flex-col items-center text-center max-w-md">
+          <div className="w-20 h-20 rounded-full bg-error/10 border border-error/20 flex items-center justify-center mb-6">
+            <span className="material-symbols-outlined text-error text-4xl">sync_problem</span>
+          </div>
+          <h2 className="text-headline-lg mb-3">Sync Issue</h2>
+          <p className="text-body-lg text-on-surface-variant mb-8">{syncError}</p>
+          <div className="flex gap-4">
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="bg-surface-container-high text-on-surface px-6 py-3 rounded-lg hover:bg-surface-container-highest transition-colors text-body-sm cursor-pointer"
+            >
+              Go to Dashboard
+            </button>
+            <button
+              onClick={() => { hasSynced.current = false; setSyncError(null); setStageIndex(0); setProgress(0); setSyncComplete(false); }}
+              className="border border-white/10 text-on-surface px-6 py-3 rounded-lg hover:border-white/20 transition-colors text-body-sm cursor-pointer"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -192,6 +238,17 @@ export default function Syncing() {
             </p>
           ))}
         </div>
+
+        {/* Parsed count on completion */}
+        {syncComplete && parsedCount > 0 && (
+          <motion.p
+            className="text-body-sm text-tertiary mt-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            {parsedCount} transactions parsed
+          </motion.p>
+        )}
 
         {/* Progress percentage */}
         <p className="text-data-mono text-on-surface-variant mt-4">{progress}%</p>

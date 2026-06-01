@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email TEXT,
   gmail_sync_enabled BOOLEAN DEFAULT false,
   gmail_history_id TEXT,
+  gmail_access_token TEXT,
+  gmail_refresh_token TEXT,
+  gmail_token_expiry TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -94,15 +97,38 @@ CREATE POLICY "Service role can insert insights"
   ON public.insights FOR INSERT
   WITH CHECK (true);
 
--- Allow service role to delete insights (for refresh)
 CREATE POLICY "Service role can delete insights"
   ON public.insights FOR DELETE
   USING (true);
 
--- 5. Enable Realtime on transactions & insights
+-- 5. Waitlist table (collects emails from users waiting for access)
+CREATE TABLE IF NOT EXISTS public.waitlist (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL UNIQUE,
+  name TEXT,
+  source TEXT DEFAULT 'landing',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.waitlist ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can insert (anonymous sign-up from landing page)
+CREATE POLICY "Anyone can join waitlist"
+  ON public.waitlist FOR INSERT
+  WITH CHECK (true);
+
+-- Only service role can read (you, the admin)
+CREATE POLICY "Service role can read waitlist"
+  ON public.waitlist FOR SELECT
+  USING (true);
+
+-- 6. Enable Realtime on transactions & insights
 ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.insights;
 
--- 6. Indexes for performance
+-- 7. Indexes for performance
 CREATE INDEX IF NOT EXISTS transactions_user_date_idx
   ON public.transactions (user_id, transaction_date DESC);
+
+CREATE INDEX IF NOT EXISTS insights_user_type_idx
+  ON public.insights (user_id, type);
