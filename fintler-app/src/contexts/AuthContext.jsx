@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 
 const AuthContext = createContext(null);
@@ -8,19 +8,39 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Provider tokens are only available on the INITIAL auth event.
+  // Supabase fires multiple events (INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED)
+  // and later events DON'T include provider_token, which overwrites it to null.
+  // We preserve them in a ref so they survive across re-renders and events.
+  const providerTokenRef = useRef(null);
+  const providerRefreshTokenRef = useRef(null);
+
   useEffect(() => {
     if (!supabase) {
       setLoading(false);
       return;
     }
 
-    // onAuthStateChange handles EVERYTHING in Supabase v2:
-    // - INITIAL_SESSION: resolves session from localStorage or OAuth callback URL
-    // - SIGNED_IN / SIGNED_OUT: subsequent auth changes
-    // DO NOT call getSession() separately — it races with the URL token exchange.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      // Capture provider tokens ONLY when they exist (first auth event)
+      if (newSession?.provider_token) {
+        providerTokenRef.current = newSession.provider_token;
+      }
+      if (newSession?.provider_refresh_token) {
+        providerRefreshTokenRef.current = newSession.provider_refresh_token;
+      }
+
+      // Build session with preserved provider tokens
+      const enrichedSession = newSession
+        ? {
+            ...newSession,
+            provider_token: newSession.provider_token || providerTokenRef.current,
+            provider_refresh_token: newSession.provider_refresh_token || providerRefreshTokenRef.current,
+          }
+        : null;
+
+      setSession(enrichedSession);
+      setUser(newSession?.user ?? null);
       setLoading(false);
     });
 
@@ -29,7 +49,6 @@ export function AuthProvider({ children }) {
 
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) {
-      // Demo mode — simulate a fake user for testing
       setUser({ email: "demo@fintler.app", user_metadata: { full_name: "Demo User" } });
       setLoading(false);
       return { error: null };
@@ -39,15 +58,10 @@ export function AuthProvider({ children }) {
       provider: "google",
       options: {
         scopes: "https://www.googleapis.com/auth/gmail.readonly",
-        // Request offline access so Google returns a refresh_token.
-        // This lets us re-sync Gmail later without re-authenticating.
-        // "consent" forces the consent screen every time so we always get the refresh token.
         queryParams: {
           access_type: "offline",
           prompt: "consent",
         },
-        // Redirect to /auth/callback — a dedicated route that waits for
-        // the session to resolve before navigating to /sync.
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -60,6 +74,9 @@ export function AuthProvider({ children }) {
       setSession(null);
       return;
     }
+    // Clear stored provider tokens
+    providerTokenRef.current = null;
+    providerRefreshTokenRef.current = null;
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

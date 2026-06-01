@@ -68,30 +68,41 @@ export default function Syncing() {
           setStageIndex(2);
 
           // Call gmail-initial-sync with BOTH tokens so the backend can store them
+          const providerToken = session.provider_token || "";
+          const providerRefreshToken = session.provider_refresh_token || "";
+
+          console.log("Sync: provider_token present:", !!providerToken, "refresh_token present:", !!providerRefreshToken);
+
           const { data: syncData, error: syncErr } = await supabase.functions.invoke(
             "gmail-initial-sync",
             {
               body: {
                 user_id: user.id,
-                provider_token: session.provider_token || "",
-                provider_refresh_token: session.provider_refresh_token || "",
+                provider_token: providerToken,
+                provider_refresh_token: providerRefreshToken,
               },
             }
           );
 
+          console.log("Sync result:", { syncData, syncErr: syncErr?.message });
+
+          // Check for fatal errors (no token at all)
           if (syncErr) {
-            console.warn("gmail-initial-sync:", syncErr.message);
-            setSyncError("Gmail sync encountered an issue. Your existing data is safe.");
+            const errMsg = syncErr?.message || "";
+            const dataErr = typeof syncData === "string" ? syncData : syncData?.error || "";
+            const fullErr = errMsg + " " + dataErr;
+
+            if (fullErr.includes("No Gmail token") || fullErr.includes("Not authenticated")) {
+              setSyncError("Gmail authorization expired. Please sign out and sign in again to re-authorize.");
+              return;
+            }
+            // Non-fatal: log but continue to dashboard (user may have 0 bank emails)
+            console.warn("gmail-initial-sync non-fatal error:", errMsg, dataErr);
           }
 
           // Extract parsed count for the success message
           if (syncData?.parsed) {
             setParsedCount(syncData.parsed);
-          }
-
-          if (syncData?.error && syncData.error.includes("No Gmail token")) {
-            setSyncError("Gmail token expired. Please sign out and sign in again.");
-            return;
           }
 
           await delay(1200);
