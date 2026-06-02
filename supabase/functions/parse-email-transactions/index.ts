@@ -295,13 +295,27 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-    if (authErr || !user) return jsonRes({ error: "Invalid session." }, 401);
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    const { raw_email_body, bank_domain, source_email_id, user_id } = await req.json();
+    let targetUserId: string;
+
+    if (token === serviceRoleKey) {
+      // Internal call from gmail-initial-sync — trust user_id from body
+      const body = await req.json();
+      if (!body.user_id) return jsonRes({ error: "Missing user_id for service call." }, 400);
+      targetUserId = body.user_id;
+      // Re-parse remaining fields from body
+      var { raw_email_body, bank_domain, source_email_id } = body;
+    } else {
+      // Direct user call — verify JWT
+      const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
+      if (authErr || !user) return jsonRes({ error: "Invalid session." }, 401);
+      var reqBody = await req.json();
+      var { raw_email_body, bank_domain, source_email_id } = reqBody;
+      targetUserId = reqBody.user_id || user.id;
+    }
+
     if (!raw_email_body) return jsonRes({ error: "Missing email body." }, 400);
-
-    const targetUserId = user_id || user.id;
 
     // Dedup
     if (source_email_id) {
