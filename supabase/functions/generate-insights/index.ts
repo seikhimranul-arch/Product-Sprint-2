@@ -96,14 +96,14 @@ Deno.serve(async (req) => {
 
     if (!targetUserId) return jsonRes({ error: "Invalid session. No user_id." }, 401);
 
-    // ----- FETCH TRANSACTIONS (last 90 days) -----
-    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    // ----- FETCH TRANSACTIONS (last 60 days) -----
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: transactions, error: txErr } = await supabase
       .from("transactions")
       .select("id, amount, type, merchant, category, transaction_date")
       .eq("user_id", targetUserId)
-      .gte("transaction_date", ninetyDaysAgo)
+      .gte("transaction_date", sixtyDaysAgo)
       .order("transaction_date", { ascending: false })
       .limit(300);
 
@@ -220,7 +220,7 @@ Return ONLY valid JSON array, no markdown.` }] },
     const analysisSummary = {
       total_spend_inr: totalSpend,
       transaction_count: debits.length,
-      period_days: 90,
+      period_days: 60,
       top_categories: Object.entries(categoryMap)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
@@ -282,7 +282,7 @@ Return ONLY valid JSON array, no markdown.` }] },
         user_id: targetUserId,
         type: "personality",
         title: aiOutput.spending_personality || "The Mindful Spender",
-        body: `Based on analysis of ${debits.length} transactions over the last 90 days.`,
+        body: `Based on analysis of ${debits.length} transactions over the last 60 days.`,
         severity: "info",
       },
       {

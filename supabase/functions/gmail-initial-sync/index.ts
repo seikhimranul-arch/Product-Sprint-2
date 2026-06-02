@@ -46,7 +46,7 @@ const BANK_SENDERS = [
 ];
 
 function buildGmailQuery(): string {
-  const ninetyDaysAgo = Math.floor((Date.now() - 90 * 24 * 60 * 60 * 1000) / 1000);
+  const sixtyDaysAgo = Math.floor((Date.now() - 60 * 24 * 60 * 60 * 1000) / 1000);
 
   // Strategy 1: Known bank senders
   const senderQuery = BANK_SENDERS.map((s) => `from:${s}`).join(" OR ");
@@ -69,7 +69,7 @@ function buildGmailQuery(): string {
   const keywordQuery = keywords.join(" OR ");
 
   // Union: emails from known senders OR containing transaction keywords
-  return `(${senderQuery} OR ${keywordQuery}) after:${ninetyDaysAgo}`;
+  return `(${senderQuery} OR ${keywordQuery}) after:${sixtyDaysAgo}`;
 }
 
 // Refresh expired access token
@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
     console.log(`Gmail returned ${messages.length} messages matching query.`);
 
     if (messages.length === 0) {
-      return jsonRes({ success: true, parsed: 0, total: 0, message: "No transaction emails found in the last 90 days." });
+      return jsonRes({ success: true, parsed: 0, total: 0, message: "No transaction emails found in the last 60 days." });
     }
 
     // ── PROCESS EMAILS ──
