@@ -75,26 +75,33 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-    if (authErr || !user) return jsonRes({ error: "Invalid session." }, 401);
-
-    // Also support passing user_id in body (for internal function-to-function calls)
-    let targetUserId = user.id;
+    // Read body first (can only be consumed once)
+    let body: any = {};
     try {
       const bodyText = await req.text();
-      if (bodyText) {
-        const body = JSON.parse(bodyText);
-        if (body?.user_id) targetUserId = body.user_id;
-      }
+      if (bodyText) body = JSON.parse(bodyText);
     } catch {}
+
+    const token = authHeader.replace("Bearer ", "");
+    let targetUserId: string | null = null;
+
+    // Try JWT auth first
+    const { data: { user } } = await supabase.auth.getUser(token);
+    if (user) {
+      targetUserId = body?.user_id || user.id;
+    } else if (body?.user_id) {
+      // Anon-key or service-role call with user_id in body — trust it
+      targetUserId = body.user_id;
+    }
+
+    if (!targetUserId) return jsonRes({ error: "Invalid session. No user_id." }, 401);
 
     // ----- FETCH TRANSACTIONS (last 90 days) -----
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: transactions, error: txErr } = await supabase
       .from("transactions")
-      .select("amount, type, merchant, category, transaction_date")
+      .select("id, amount, type, merchant, category, transaction_date")
       .eq("user_id", targetUserId)
       .gte("transaction_date", ninetyDaysAgo)
       .order("transaction_date", { ascending: false })
@@ -106,6 +113,68 @@ Deno.serve(async (req) => {
         hint: "Run gmail-initial-sync first.",
       }, 400);
     }
+
+    // ----- RE-CATEGORIZE UNCATEGORIZED TRANSACTIONS VIA GEMINI -----
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    const uncategorized = transactions.filter(t => !t.category || t.category === "Uncategorized");
+
+    if (uncategorized.length > 0 && geminiKey) {
+      console.log(`Re-categorizing ${uncategorized.length} uncategorized transactions...`);
+
+      const merchantList = uncategorized.map(t => ({
+        id: t.id,
+        merchant: t.merchant || "Unknown",
+        amount: t.amount,
+        type: t.type,
+      }));
+
+      try {
+        const catRes = await fetch(`${GEMINI_API_URL}?key=${geminiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: `Categorize these Indian UPI/bank transactions. Return a JSON array where each element has "id" and "category".
+Categories: Food, Travel, Shopping, Utilities, Transfer, EMI, Entertainment, Salary, Investment, Uncategorized.
+Rules:
+- Person names (first+last name) = "Transfer" (P2P UPI payment)
+- Swiggy/Zomato/restaurants = "Food"
+- Amazon/Flipkart/Myntra = "Shopping"
+- Uber/Ola/IRCTC/MakeMyTrip = "Travel"
+- Netflix/Spotify/Hotstar/YouTube = "Entertainment"
+- Electricity/Gas/Water/Recharge/Broadband = "Utilities"
+- EMI/Loan/Insurance = "EMI"
+- Salary/Payroll = "Salary"
+- Mutual Fund/SIP/Stock = "Investment"
+Return ONLY valid JSON array, no markdown.` }] },
+            contents: [{ role: "user", parts: [{ text: JSON.stringify(merchantList) }] }],
+            generationConfig: { temperature: 0.1, responseMimeType: "application/json" },
+          }),
+        });
+
+        if (catRes.ok) {
+          const catData = await catRes.json();
+          const catText = catData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          const categories = JSON.parse(catText);
+
+          if (Array.isArray(categories)) {
+            let updated = 0;
+            for (const item of categories) {
+              if (item.id && item.category && item.category !== "Uncategorized") {
+                await supabase.from("transactions").update({ category: item.category }).eq("id", item.id);
+                // Also update local copy
+                const tx = transactions.find(t => t.id === item.id);
+                if (tx) tx.category = item.category;
+                updated++;
+              }
+            }
+            console.log(`Re-categorized ${updated} transactions via Gemini.`);
+          }
+        }
+      } catch (e) {
+        console.error("Re-categorization error (non-fatal):", e);
+      }
+    }
+
 
     // ----- BUILD ANALYTICS SUMMARY FOR GEMINI -----
     const debits = transactions.filter((t) => t.type === "debit");
@@ -167,8 +236,8 @@ Deno.serve(async (req) => {
       })),
     };
 
-    // ----- CALL GEMINI -----
-    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+
+    // ----- CALL GEMINI FOR INSIGHTS -----
     if (!geminiKey) return jsonRes({ error: "GEMINI_API_KEY not configured." }, 500);
 
     const geminiRes = await fetch(`${GEMINI_API_URL}?key=${geminiKey}`, {
