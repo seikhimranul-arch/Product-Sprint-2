@@ -23,7 +23,7 @@ const corsHeaders = {
 };
 
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
 
 const SPENDING_PERSONALITIES = [
   "The Weekend Warrior",

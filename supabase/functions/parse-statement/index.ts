@@ -13,7 +13,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
 
 const SYSTEM_PROMPT = `You are FintLer, an AI Financial Clarity Engine designed for Indian Salaried Millennials.
 Your goal is to analyze raw bank statement text and provide instant, non-judgmental behavioral insights into spending habits to reduce "Salary Day Spending Anxiety".

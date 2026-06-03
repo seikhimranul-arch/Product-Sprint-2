@@ -28,7 +28,7 @@ const corsHeaders = {
 };
 
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
 
 const PARSE_SYSTEM_PROMPT = `You are a financial data extraction AI for Indian bank transaction alert emails.
 Extract the transaction details and return STRICT JSON with these exact keys:
@@ -134,38 +134,51 @@ function extractMerchant(text: string): string | null {
 // DATE EXTRACTOR
 // ─────────────────────────────────────────────────────────────────────────────
 function extractDate(text: string): string | null {
-  const patterns = [
-    // DD-MM-YY or DD-MM-YYYY (HDFC format: "01-06-26")
-    /(\d{2})-(\d{2})-(\d{2,4})/,
-    // DD/MM/YYYY
-    /(\d{1,2})\/(\d{1,2})\/(\d{2,4})/,
-    // DD-MMM-YY or DD-MMM-YYYY (ICICI: "01-Jun-26")
-    /(\d{1,2})[\s-]+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s-]+(\d{2,4})/i,
-    // YYYY-MM-DD
-    /(\d{4})-(\d{2})-(\d{2})/,
-  ];
+  const monthNames: Record<string, string> = {
+    jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+    jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+  };
 
-  for (const pattern of patterns) {
-    const m = text.match(pattern);
-    if (m) {
-      try {
-        const raw = m[0];
-        const d = new Date(raw);
-        if (!isNaN(d.getTime()) && d.getFullYear() > 2000) {
-          return d.toISOString();
-        }
-        // Handle 2-digit year (26 → 2026)
-        if (m[3] && m[3].length === 2) {
-          const fullYear = parseInt(m[3]) + 2000;
-          // DD-MM-YYYY
-          if (m[1] && m[2]) {
-            const constructed = new Date(`${fullYear}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`);
-            if (!isNaN(constructed.getTime())) return constructed.toISOString();
-          }
-        }
-      } catch (_) {}
-    }
+  // Pattern 1: DD-MMM-YY or DD-MMM-YYYY (ICICI: "01-Jun-26") — unambiguous
+  const mmmMatch = text.match(/(\d{1,2})[\s-]+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s-]+(\d{2,4})/i);
+  if (mmmMatch) {
+    const day = mmmMatch[1].padStart(2, "0");
+    const month = monthNames[mmmMatch[2].toLowerCase().slice(0, 3)];
+    let year = mmmMatch[3];
+    if (year.length === 2) year = `20${year}`;
+    const d = new Date(`${year}-${month}-${day}T00:00:00Z`);
+    if (!isNaN(d.getTime())) return d.toISOString();
   }
+
+  // Pattern 2: YYYY-MM-DD (ISO) — unambiguous
+  const isoMatch = text.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const d = new Date(`${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}T00:00:00Z`);
+    if (!isNaN(d.getTime()) && d.getFullYear() > 2000) return d.toISOString();
+  }
+
+  // Pattern 3: DD-MM-YY or DD-MM-YYYY (HDFC: "01-06-26") — force DD-MM
+  const dashMatch = text.match(/(\d{2})-(\d{2})-(\d{2,4})/);
+  if (dashMatch) {
+    const day = dashMatch[1];
+    const month = dashMatch[2];
+    let year = dashMatch[3];
+    if (year.length === 2) year = `20${year}`;
+    const d = new Date(`${year}-${month}-${day}T00:00:00Z`);
+    if (!isNaN(d.getTime()) && d.getFullYear() > 2000) return d.toISOString();
+  }
+
+  // Pattern 4: DD/MM/YYYY or D/M/YYYY — force DD/MM (Indian format)
+  const slashMatch = text.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (slashMatch) {
+    const day = slashMatch[1].padStart(2, "0");
+    const month = slashMatch[2].padStart(2, "0");
+    let year = slashMatch[3];
+    if (year.length === 2) year = `20${year}`;
+    const d = new Date(`${year}-${month}-${day}T00:00:00Z`);
+    if (!isNaN(d.getTime()) && d.getFullYear() > 2000) return d.toISOString();
+  }
+
   return null;
 }
 

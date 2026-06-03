@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [gmailConnected, setGmailConnected] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [refreshingInsights, setRefreshingInsights] = useState(false);
+  const [budgetGoal, setBudgetGoal] = useState(null);
 
   // Auth guard
   useEffect(() => {
@@ -98,6 +99,7 @@ export default function Dashboard() {
 
       // Gmail connection status from profiles table
       setGmailConnected(!!profileData?.gmail_sync_enabled);
+      if (profileData?.budget_goal) setBudgetGoal(profileData.budget_goal);
 
       // Fetch recent insights (type, title, body, severity)
       const { data: insightsData } = await supabase
@@ -202,6 +204,20 @@ export default function Dashboard() {
       console.error(e);
     }
     setRefreshingInsights(false);
+  }
+
+  async function handleSetGoal() {
+    const input = prompt("Set your weekly spending budget (₹):", budgetGoal || "");
+    if (input === null) return; // cancelled
+    const amount = parseFloat(input);
+    if (isNaN(amount) || amount <= 0) {
+      alert("Please enter a valid amount.");
+      return;
+    }
+    if (supabase && user) {
+      await supabase.from("profiles").update({ budget_goal: amount }).eq("id", user.id);
+    }
+    setBudgetGoal(amount);
   }
 
   if (authLoading || loadingData) {
@@ -389,8 +405,11 @@ export default function Dashboard() {
                   {insights?.goal?.title || "Try setting a budget this week."}
                 </p>
               </div>
-              <button className="bg-transparent border border-white/10 text-on-surface px-6 py-3 rounded-lg hover:bg-white/5 hover:border-white/30 transition-all text-body-sm font-medium cursor-pointer">
-                Set Goal
+              <button
+                onClick={handleSetGoal}
+                className="bg-transparent border border-white/10 text-on-surface px-6 py-3 rounded-lg hover:bg-white/5 hover:border-white/30 transition-all text-body-sm font-medium cursor-pointer"
+              >
+                {budgetGoal ? `₹${budgetGoal.toLocaleString("en-IN")} / week` : "Set Goal"}
               </button>
             </motion.div>
 
