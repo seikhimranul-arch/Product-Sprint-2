@@ -1,77 +1,17 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../lib/supabase";
+import useAnalyticsData from "../hooks/useAnalyticsData";
 import Footer from "../components/Footer";
 
 export default function Analytics() {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const [txs, setTxs] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { txs, loading, totalSpend, sortedCategories, dayMap, maxDaySpend, topMerchants } = useAnalyticsData();
 
-  useEffect(() => {
-    if (!authLoading && !user) navigate("/");
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    if (!user || !supabase) return;
-    async function fetchTxs() {
-      setLoading(true);
-      const { data } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("type", "debit")
-        .order("transaction_date", { ascending: false });
-      setTxs(data || []);
-      setLoading(false);
-    }
-    fetchTxs();
-  }, [user]);
-
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
       </div>
     );
   }
-
-  // Compute stats from real data
-  const totalSpend = txs.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-
-  // Category grouping
-  const categoryMap = {};
-  txs.forEach((t) => {
-    const cat = t.category || "Uncategorized";
-    categoryMap[cat] = (categoryMap[cat] || 0) + parseFloat(t.amount || 0);
-  });
-  const sortedCategories = Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
-
-  // Day-of-week grouping (computed from transaction_date)
-  const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-  const dayMap = { monday: 0, tuesday: 0, wednesday: 0, thursday: 0, friday: 0, saturday: 0, sunday: 0 };
-  txs.forEach((t) => {
-    const d = new Date(t.transaction_date || t.created_at);
-    if (!isNaN(d)) {
-      const dayName = dayNames[d.getDay()];
-      dayMap[dayName] += parseFloat(t.amount || 0);
-    }
-  });
-  const maxDaySpend = Math.max(...Object.values(dayMap), 1);
-
-  // Top merchants
-  const merchantMap = {};
-  txs.forEach((t) => {
-    if (t.merchant) {
-      merchantMap[t.merchant] = (merchantMap[t.merchant] || 0) + parseFloat(t.amount || 0);
-    }
-  });
-  const topMerchants = Object.entries(merchantMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8);
 
   return (
     <motion.div
