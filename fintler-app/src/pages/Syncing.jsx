@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 
 const SYNC_STAGES = [
   { msg: "Connecting securely to Gmail...", pct: 10 },
-  { msg: "Fetching last 90 days of bank alert emails...", pct: 35 },
+  { msg: "Fetching last 60 days of bank alert emails...", pct: 35 },
   { msg: "Running regex fast-path on transactions...", pct: 55 },
   { msg: "AI fallback parsing edge cases...", pct: 70 },
   { msg: "Analyzing your spending personality...", pct: 88 },

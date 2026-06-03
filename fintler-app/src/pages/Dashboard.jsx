@@ -81,7 +81,7 @@ export default function Dashboard() {
               FintLer reads your bank transaction emails to build your financial dashboard.
             </p>
             <Link
-              to="/syncing"
+              to="/sync"
               className="inline-block bg-primary text-on-primary px-8 py-3 rounded-lg text-body-sm font-medium hover:opacity-90 transition-opacity"
             >
               Sync Gmail Now
