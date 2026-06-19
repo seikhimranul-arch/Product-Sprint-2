@@ -86,24 +86,27 @@ export default function Syncing() {
 
           console.log("Sync result:", { syncData, syncErr: syncErr?.message });
 
-          // Check for fatal errors (no token at all)
-          if (syncErr) {
-            const errMsg = syncErr?.message || "";
-            const dataErr = typeof syncData === "string" ? syncData : syncData?.error || "";
-            const fullErr = errMsg + " " + dataErr;
+          // Check for errors — both from invoke() and from the function response
+          const responseError = syncData?.error || "";
+          const responseAction = syncData?.action || "";
 
-            if (fullErr.includes("No Gmail token") || fullErr.includes("Not authenticated")) {
-              setSyncError("Gmail authorization expired. Please sign out and sign in again to re-authorize.");
-              return;
-            }
-            // Non-fatal: log but continue to dashboard (user may have 0 bank emails)
-            console.warn("gmail-initial-sync non-fatal error:", errMsg, dataErr);
+          if (syncErr || responseAction === "reauth" || responseError.includes("No Gmail token")) {
+            const errMsg = syncErr?.message || responseError || "Unknown error";
+            console.error("Sync fatal error:", errMsg);
+            setSyncError(
+              responseAction === "reauth"
+                ? "Gmail authorization expired. Please sign out and sign in again to re-authorize Gmail access."
+                : `Sync failed: ${errMsg}`
+            );
+            return;
           }
 
           // Extract parsed count for the success message
-          if (syncData?.parsed) {
-            setParsedCount(syncData.parsed);
-          }
+          const parsedCount = syncData?.parsed || 0;
+          const totalEmails = syncData?.total || 0;
+          setParsedCount(parsedCount);
+          console.log(`Sync complete: ${parsedCount} parsed out of ${totalEmails} emails (${syncData?.dupes || 0} dupes, ${syncData?.not_bank || 0} non-bank)`);
+
 
           await delay(1200);
           animateTo(SYNC_STAGES[3].pct);
@@ -166,12 +169,23 @@ export default function Syncing() {
           </div>
           <h2 className="text-headline-lg mb-3">Sync Issue</h2>
           <p className="text-body-lg text-on-surface-variant mb-8">{syncError}</p>
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap justify-center">
             <button
               onClick={() => navigate("/dashboard")}
               className="bg-surface-container-high text-on-surface px-6 py-3 rounded-lg hover:bg-surface-container-highest transition-colors text-body-sm cursor-pointer"
             >
               Go to Dashboard
+            </button>
+            <button
+              onClick={async () => {
+                const { signOut } = await import("../contexts/AuthContext").then(m => ({ signOut: null }));
+                // Use supabase directly for sign out
+                if (supabase) await supabase.auth.signOut();
+                navigate("/");
+              }}
+              className="bg-error/20 text-error px-6 py-3 rounded-lg hover:bg-error/30 transition-colors text-body-sm cursor-pointer"
+            >
+              Sign Out & Re-authorize
             </button>
             <button
               onClick={() => { hasSynced.current = false; setSyncError(null); setStageIndex(0); setProgress(0); setSyncComplete(false); }}

@@ -186,15 +186,43 @@ function extractDate(text: string): string | null {
 // CATEGORY INFERENCE
 // ─────────────────────────────────────────────────────────────────────────────
 function inferCategory(merchant: string | null, text: string): string {
-  const s = (merchant || text).toLowerCase();
+  const s = (merchant || "").toLowerCase();
+  const t = text.toLowerCase();
 
+  // Known brands first (highest confidence)
   if (s.match(/swiggy|zomato|domino|mcdonald|kfc|blinkit|grofer|bigbasket|dunzo|zepto|instamart|restaurant|food|cafe|dhaba|pizza|burger/)) return "Food";
   if (s.match(/uber|ola|rapido|irctc|makemytrip|goibibo|indigo|spicejet|yatra|redbus|metro|railway|flight|cab|taxi|bus/)) return "Travel";
-  if (s.match(/amazon|flipkart|myntra|nykaa|meesho|ajio|snapdeal|shopping|mart|store|shop|bazaar/)) return "Shopping";
+  if (s.match(/amazon|flipkart|myntra|nykaa|meesho|ajio|snapdeal|shopping|mart|store|shop|bazaar|kirana|general store/)) return "Shopping";
   if (s.match(/netflix|spotify|youtube|hotstar|jiocinema|prime|zee5|airtel|vodafone|jio|bsnl|vi|recharge|electricity|gas|water|bill|utility|broadband/)) return "Utilities";
   if (s.match(/emi|loan|equated|hdfc bank|axis bank|icici bank|sbi|kotak|mortgage|insurance|premium/)) return "EMI";
   if (s.match(/salary|payroll|wages|neft credit|stipend/)) return "Salary";
-  if (s.match(/neft|imps|rtgs|transfer|upi|sent|payment to/)) return "Transfer";
+
+  // Transfer indicators in the email body or merchant name
+  if (s.match(/neft|imps|rtgs|transfer|sent|payment to/) || t.match(/neft|imps|rtgs/)) return "Transfer";
+
+  // Person name detection (P2P UPI transfers) — most common "Uncategorized" case
+  // Pattern: 2-4 words, each starting with uppercase, no numbers, no common brand suffixes
+  if (merchant && /^[A-Z][a-z]+(\s+[A-Z][a-z]+){0,3}$/.test(merchant.trim())) {
+    // Looks like a person name — but exclude if it matches a known brand pattern
+    const brandIndicators = /store|shop|mart|centre|center|enterprise|trading|service|auto|pvt|ltd|inc|llp|pharma|hospital|clinic|hotel|resort/i;
+    if (!brandIndicators.test(merchant)) {
+      return "Transfer";
+    }
+  }
+
+  // Also check for ALL CAPS person names (common in UPI: "PANNALAL KUMAWAT")
+  if (merchant && /^[A-Z\s]{4,40}$/.test(merchant.trim())) {
+    const words = merchant.trim().split(/\s+/);
+    if (words.length >= 2 && words.length <= 4 && words.every(w => w.length >= 2)) {
+      const brandIndicators = /STORE|SHOP|MART|CENTRE|CENTER|ENTERPRISE|TRADING|SERVICE|AUTO|PVT|LTD|INC|PHARMA|HOSPITAL|HOTEL/;
+      if (!brandIndicators.test(merchant)) {
+        return "Transfer";
+      }
+    }
+  }
+
+  // Check UPI indicator in email text
+  if (t.includes("upi") || t.includes("vpa")) return "Transfer";
 
   return "Uncategorized";
 }
