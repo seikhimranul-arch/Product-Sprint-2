@@ -50,27 +50,40 @@ export default function Dashboard() {
     >
       <main className="flex-grow w-full max-w-[var(--spacing-container-max)] mx-auto px-[var(--spacing-margin-mobile)] md:px-[var(--spacing-margin-desktop)] py-8 pt-24">
 
-        {/* Gmail Status Bar */}
-        {gmailConnected && (
-          <div className="flex items-center gap-4 mb-6 text-body-sm">
-            <span className="flex items-center gap-2 text-tertiary">
-              <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse" />
-              Gmail Connected — Real-Time
-            </span>
-            <button onClick={disconnectGmail} className="text-error hover:underline bg-transparent border-none cursor-pointer text-body-sm">
-              Disconnect
-            </button>
-            <button
-              onClick={refreshInsights}
-              disabled={refreshingInsights}
-              className="text-tertiary hover:underline bg-transparent border-none cursor-pointer text-body-sm disabled:opacity-50"
-            >
-              {refreshingInsights ? "⏳ Refreshing..." : "↻ Refresh Insights"}
-            </button>
-          </div>
-        )}
+        {/* Welcome Header */}
+        <header className="mb-8">
+          <h1 className="text-display mb-2">Welcome back, {profile?.name || "User"}.</h1>
+          <p className="text-headline-md text-on-surface-variant">Here is your financial clarity.</p>
+        </header>
 
-        {/* Empty State */}
+        {/* Gmail Status Bar */}
+        <div className="flex items-center gap-4 mb-6 text-body-sm">
+          {gmailConnected ? (
+            <>
+              <span className="flex items-center gap-2 text-tertiary">
+                <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse" />
+                Gmail Connected — Real-Time
+              </span>
+              <button onClick={disconnectGmail} className="text-error hover:underline bg-transparent border-none cursor-pointer text-body-sm">
+                Disconnect
+              </button>
+              <button
+                onClick={refreshInsights}
+                disabled={refreshingInsights}
+                className="text-tertiary hover:underline bg-transparent border-none cursor-pointer text-body-sm disabled:opacity-50"
+              >
+                {refreshingInsights ? "⏳ Refreshing..." : "↻ Refresh Insights"}
+              </button>
+            </>
+          ) : (
+            <Link to="/sync" className="flex items-center gap-2 text-primary hover:underline">
+              <span className="material-symbols-outlined text-sm">sync</span>
+              Sync Gmail Now
+            </Link>
+          )}
+        </div>
+
+        {/* Empty State — only when no data AND no gmail */}
         {!hasData && !gmailConnected && (
           <div className="bg-surface-container/30 border border-white/10 rounded-xl p-12 text-center">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">

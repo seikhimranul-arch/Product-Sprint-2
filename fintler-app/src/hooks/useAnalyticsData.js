@@ -8,17 +8,26 @@ export default function useAnalyticsData() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !supabase) return;
+    if (!user || !supabase) {
+      setLoading(false);
+      setTxs([]);
+      return;
+    }
     async function fetchTxs() {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("type", "debit")
-        .order("transaction_date", { ascending: false });
-      if (error) console.error("Analytics fetch error:", error);
-      setTxs(data || []);
+      try {
+        const { data, error } = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("type", "debit")
+          .order("transaction_date", { ascending: false });
+        if (error) console.error("Analytics fetch error:", error);
+        setTxs(data || []);
+      } catch (e) {
+        console.error("Analytics fetch exception:", e);
+        setTxs([]);
+      }
       setLoading(false);
     }
     fetchTxs();
