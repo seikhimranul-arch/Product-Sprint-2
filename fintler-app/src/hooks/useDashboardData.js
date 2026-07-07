@@ -33,45 +33,81 @@ function mapTransaction(t) {
 function mapInsights(insightsData) {
   if (!insightsData || insightsData.length === 0) return null;
 
+  // New schema: single rich row with named columns
+  // Old schema: multiple rows with type/title/body
+  const latest = insightsData[0];
+
+  // Detect new schema (has spending_personality column)
+  if (latest.spending_personality) {
+    return {
+      personality: {
+        label: "Spending Personality",
+        title: latest.spending_personality || "Analyzing...",
+        description: latest.personality_description || "Based on your recent transaction patterns.",
+      },
+      summary: {
+        label: "Monthly Summary",
+        title: latest.summary || "Monitoring your spending...",
+        subtitle: "",
+      },
+      alert: {
+        label: "Spending Alert",
+        title: latest.category_alert_title || "No critical alerts",
+        severity: "medium",
+        subtitle: latest.category_alert_category
+          ? `₹${Number(latest.category_alert_amount || 0).toLocaleString("en-IN")} on ${latest.category_alert_category}`
+          : "Keep spending mindfully.",
+        icon: "warning",
+        amount: latest.category_alert_amount,
+      },
+      behavioral: {
+        label: latest.behavioral_trigger || "Pattern Detected",
+        title: latest.behavioral_trigger || "Spending Pattern",
+        description: latest.behavioral_trigger_detail || "Sync more data to see deeper insights.",
+        icon: "bolt",
+      },
+      goal: {
+        label: "Micro Goal",
+        title: latest.micro_goal || "Try a no-spend day this week.",
+        description: "",
+        buttonText: "Got it",
+      },
+    };
+  }
+
+  // Legacy schema fallback (type/title/body rows)
   const byType = {};
   insightsData.forEach((ins) => {
     if (!byType[ins.type]) byType[ins.type] = ins;
   });
-
-  const personalityIns = byType["personality"] || byType["spending_personality"];
-  const summaryIns = byType["summary"] || byType["monthly_summary"];
-  const alertIns = byType["alert"] || byType["spending_alert"];
-  const behavioralIns = byType["behavioral"] || byType["pattern"];
-  const goalIns = byType["goal"] || byType["recommendation"];
-
   return {
     personality: {
       label: "Spending Personality",
-      title: personalityIns?.title || "Analyzing...",
-      description: personalityIns?.body || "Based on your recent transaction patterns.",
+      title: byType["personality"]?.title || byType["spending_personality"]?.title || "Analyzing...",
+      description: byType["personality"]?.body || "Based on your recent transaction patterns.",
     },
     summary: {
       label: "Monthly Summary",
-      title: summaryIns?.title || "Monitoring your spending...",
-      subtitle: summaryIns?.body || "Insights generated from your latest sync.",
+      title: byType["summary"]?.title || "Monitoring your spending...",
+      subtitle: byType["summary"]?.body || "",
     },
     alert: {
       label: "Spending Alert",
-      title: alertIns?.title || "No critical alerts",
-      severity: alertIns?.severity || "low",
-      subtitle: alertIns?.body || "Keep spending mindfully.",
+      title: byType["alert"]?.title || "No critical alerts",
+      severity: byType["alert"]?.severity || "low",
+      subtitle: byType["alert"]?.body || "Keep spending mindfully.",
       icon: "warning",
     },
     behavioral: {
       label: "Behavioral Insight",
-      title: behavioralIns?.title || "Spending Pattern",
-      description: behavioralIns?.body || "Sync more data to see deeper insights.",
+      title: byType["behavioral"]?.title || "Spending Pattern",
+      description: byType["behavioral"]?.body || "Sync more data to see deeper insights.",
       icon: "bolt",
     },
     goal: {
       label: "Suggested Goal",
-      title: goalIns?.title || "Try saving 10% more this month.",
-      description: goalIns?.body || "",
+      title: byType["goal"]?.title || "Try saving 10% more this month.",
+      description: byType["goal"]?.body || "",
       buttonText: "Set Goal",
     },
   };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 
@@ -6,6 +6,9 @@ export default function useAnalyticsData() {
   const { user } = useAuth();
   const [txs, setTxs] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
     if (!user || !supabase) {
@@ -31,7 +34,7 @@ export default function useAnalyticsData() {
       setLoading(false);
     }
     fetchTxs();
-  }, [user]);
+  }, [user, refreshKey]);
 
   const totalSpend = useMemo(() => {
     if (!txs) return 0;
@@ -52,15 +55,17 @@ export default function useAnalyticsData() {
     if (!txs) return { dayMap: {}, maxDaySpend: 1 };
     const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
     const dayMap = { monday: 0, tuesday: 0, wednesday: 0, thursday: 0, friday: 0, saturday: 0, sunday: 0 };
+    const dayCount = { monday: 0, tuesday: 0, wednesday: 0, thursday: 0, friday: 0, saturday: 0, sunday: 0 };
     txs.forEach((t) => {
       const d = new Date(t.transaction_date || t.created_at);
       if (!isNaN(d)) {
         const dayName = dayNames[d.getDay()];
         dayMap[dayName] += parseFloat(t.amount || 0);
+        dayCount[dayName]++;
       }
     });
     const maxDaySpend = Math.max(...Object.values(dayMap), 1);
-    return { dayMap, maxDaySpend };
+    return { dayMap, maxDaySpend, dayCount };
   }, [txs]);
 
   const topMerchants = useMemo(() => {
@@ -83,6 +88,8 @@ export default function useAnalyticsData() {
     sortedCategories,
     dayMap: dayData.dayMap,
     maxDaySpend: dayData.maxDaySpend,
+    dayCount: dayData.dayCount,
     topMerchants,
+    refresh,
   };
 }
