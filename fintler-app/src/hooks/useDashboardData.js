@@ -211,7 +211,7 @@ export default function useDashboardData() {
     if (!supabase || !user) return;
     setRefreshingInsights(true);
     try {
-      await supabase.functions.invoke("generate-insights", { body: { user_id: user.id } });
+      // Just re-fetch from database since insights are generated during sync now
       await fetchAll();
     } catch (e) {
       console.error(e);

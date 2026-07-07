@@ -113,18 +113,11 @@ export default function Syncing() {
           setStageIndex(3);
           await delay(1200);
 
-          // Trigger insight generation
+          // Insights are now generated inside gmail-initial-sync automatically
+          // Just animate the UI to show completion
           animateTo(SYNC_STAGES[4].pct);
           setStageIndex(4);
-
-          const { error: insightErr } = await supabase.functions.invoke("generate-insights", {
-            body: { user_id: user.id },
-          });
-
-          if (insightErr) {
-            console.warn("generate-insights:", insightErr.message);
-            // Non-fatal — transactions are still saved
-          }
+          await delay(1200);
 
         } catch (e) {
           console.warn("Sync step failed:", e);

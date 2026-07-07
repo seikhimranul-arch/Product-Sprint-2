@@ -78,6 +78,8 @@ CREATE INDEX IF NOT EXISTS transactions_user_category_idx
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "transactions_read" ON public.transactions;
 DROP POLICY IF EXISTS "transactions_write" ON public.transactions;
+DROP POLICY IF EXISTS "transactions_update" ON public.transactions;
+DROP POLICY IF EXISTS "transactions_delete" ON public.transactions;
 CREATE POLICY "transactions_read" ON public.transactions
   FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "transactions_write" ON public.transactions
