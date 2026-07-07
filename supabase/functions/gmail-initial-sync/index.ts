@@ -363,7 +363,7 @@ Deno.serve(async (req) => {
       const rows = transactions.map((t) => ({
         user_id, source_email_id: t.source_email_id,
         bank_name: t.bank_name, account_last4: t.account_last4,
-        amount: t.amount, type: t.type, merchant: t.merchant,
+        amount_inr: t.amount, type: t.type, merchant: t.merchant,
         category: t.category, transaction_date: t.transaction_date,
         day_of_week: getDayOfWeek(new Date(t.transaction_date)),
         hour_of_day: new Date(t.transaction_date).getHours(),
