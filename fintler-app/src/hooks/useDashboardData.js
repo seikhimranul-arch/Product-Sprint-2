@@ -178,7 +178,7 @@ export default function useDashboardData() {
         .from("insights")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
+        .order("generated_at", { ascending: false })
         .limit(10);
 
       if (insightsErr) console.error("Insights fetch error:", insightsErr);

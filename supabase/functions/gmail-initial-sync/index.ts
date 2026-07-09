@@ -297,20 +297,12 @@ Deno.serve(async (req) => {
       }).eq('id', user_id)
     } catch (e) { console.log('profile update skipped:', e) }
 
-    // Save email_connections if table exists
-    try {
-      await supabaseAdmin.from('email_connections').upsert({
-        user_id, provider: 'gmail',
-        access_token: provider_token,
-        refresh_token: provider_refresh_token || '',
-        connected_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' })
-    } catch (e) { console.log('email_connections skipped:', e) }
+    // ponytail: email_connections table doesn't exist in schema, removed dead upsert
 
     const ninetyDaysAgo = new Date()
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
     const dateStr = ninetyDaysAgo.toISOString().split('T')[0].replace(/-/g, '/')
-    const fromAddresses = Object.keys(BANK_DOMAINS).map(d => d).join(' OR from:')
+    const fromAddresses = Object.keys(BANK_DOMAINS).join(' OR ')
     const query = `from:(${fromAddresses}) after:${dateStr}`
     console.log('Gmail query:', query)
 
@@ -363,7 +355,7 @@ Deno.serve(async (req) => {
       const rows = transactions.map((t) => ({
         user_id, source_email_id: t.source_email_id,
         bank_name: t.bank_name, account_last4: t.account_last4,
-        amount_inr: t.amount, type: t.type, merchant: t.merchant,
+        amount: t.amount, type: t.type, merchant: t.merchant,
         category: t.category, transaction_date: t.transaction_date,
         day_of_week: getDayOfWeek(new Date(t.transaction_date)),
         hour_of_day: new Date(t.transaction_date).getHours(),
