@@ -31,7 +31,7 @@ export default function Landing() {
   // Clear warning when all boxes are checked
   useEffect(() => {
     if (allConsented) {
-      setShowConsentWarning(false);
+      queueMicrotask(() => setShowConsentWarning(false));
     }
   }, [allConsented]);
 

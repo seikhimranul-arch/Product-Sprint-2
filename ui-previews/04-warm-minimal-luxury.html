@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FintLer — Direction 4: Warm Minimal Luxury</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF8F5; --surface: #FFFFFF; --surface2: #F2F0ED;
+    --ink: #1A1A1A; --ink-dim: #5A5A5A; --ink-muted: #9A9A9A;
+    --teal: #00B89C; --gold: #C8A27A; --error: #D94F4F;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'Inter', -apple-system, sans-serif;
+    --radius: 16px; --radius-sm: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.06), 0 12px 40px rgba(0,0,0,0.04);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--ink); }
+
+  /* Top bar */
+  .topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 48px; background: var(--surface); border-bottom: 1px solid #EAE8E4; }
+  .topbar-logo { font-family: var(--serif); font-size: 22px; color: var(--ink); }
+  .topbar-logo span { color: var(--teal); }
+  .topbar-nav { display: flex; gap: 8px; }
+  .topbar-link { padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; color: var(--ink-dim); cursor: pointer; transition: all 0.2s; }
+  .topbar-link:hover { background: var(--surface2); color: var(--ink); }
+  .topbar-link.active { background: #E8F5F0; color: var(--teal); }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .topbar-status { font-size: 12px; color: var(--teal); display: flex; align-items: center; gap: 6px; }
+  .topbar-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+  .topbar-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--ink-dim); }
+
+  .content { max-width: 1200px; margin: 0 auto; padding: 40px 48px; }
+  .welcome { margin-bottom: 40px; }
+  .welcome h1 { font-family: var(--serif); font-size: 36px; margin-bottom: 6px; }
+  .welcome h1 span { color: var(--teal); }
+  .welcome p { font-size: 15px; color: var(--ink-dim); }
+
+  .card {
+    background: var(--surface); border: 1px solid #EAE8E4; border-radius: var(--radius);
+    padding: 28px; box-shadow: var(--shadow); transition: box-shadow 0.3s;
+  }
+  .card:hover { box-shadow: var(--shadow-lg); }
+  .card-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 10px; }
+
+  .grid { display: grid; gap: 20px; }
+  .grid-12 { grid-template-columns: repeat(12, 1fr); }
+  .col-8 { grid-column: span 8; }
+  .col-4 { grid-column: span 4; }
+  .col-12 { grid-column: span 12; }
+
+  /* Personality */
+  .personality { display: flex; gap: 24px; align-items: center; }
+  .personality-badge { width: 72px; height: 72px; border-radius: 18px; background: #E8F5F0; display: flex; align-items: center; justify-content: center; font-size: 32px; flex-shrink: 0; }
+  .personality h2 { font-family: var(--serif); font-size: 24px; margin-bottom: 6px; }
+  .personality p { font-size: 13px; color: var(--ink-dim); line-height: 1.7; }
+
+  /* Insight */
+  .insight-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; font-size: 18px; }
+  .insight h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .insight p { font-size: 13px; color: var(--ink-dim); line-height: 1.6; }
+
+  /* Stats */
+  .stat-value { font-family: var(--serif); font-size: 32px; margin: 6px 0 4px; }
+  .stat-sub { font-size: 12px; color: var(--ink-muted); }
+
+  /* Chart */
+  .chart-area { height: 180px; margin-top: 16px; position: relative; }
+  .chart-area svg { width: 100%; height: 100%; }
+
+  /* Goal */
+  .goal-amount { font-family: var(--serif); font-size: 36px; color: var(--gold); margin: 8px 0; }
+  .goal-bar { height: 6px; background: var(--surface2); border-radius: 3px; margin: 12px 0; }
+  .goal-fill { height: 100%; width: 62%; background: linear-gradient(90deg, var(--gold), var(--teal)); border-radius: 3px; }
+  .goal-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-muted); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px;
+    border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer;
+    border: none; transition: all 0.2s;
+  }
+  .btn-teal { background: #E8F5F0; color: var(--teal); }
+  .btn-teal:hover { background: #D0EDE5; }
+  .btn-outline { background: transparent; color: var(--ink-dim); border: 1px solid #DAD8D4; }
+  .btn-outline:hover { background: var(--surface2); }
+
+  /* Transactions */
+  .tx-row { display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 16px; padding: 16px 0; border-bottom: 1px solid #EAE8E4; align-items: center; }
+  .tx-row:last-child { border-bottom: none; }
+  .tx-date { font-size: 12px; color: var(--ink-muted); }
+  .tx-merchant { display: flex; align-items: center; gap: 12px; }
+  .tx-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .tx-name { font-size: 13px; font-weight: 500; }
+  .tx-sub { font-size: 11px; color: var(--ink-muted); }
+  .tx-cat { font-size: 11px; padding: 4px 10px; border-radius: 6px; background: var(--surface2); color: var(--ink-dim); display: inline-block; }
+  .tx-amount { font-size: 14px; font-weight: 600; text-align: right; }
+  .tx-amount.income { color: var(--teal); }
+
+  /* Alert */
+  .alert { background: #FFF5F5; border-color: #F5DADA; }
+  .alert-badge { font-size: 11px; font-weight: 600; color: var(--error); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+  .alert h3 { font-family: var(--serif); font-size: 18px; margin-bottom: 6px; }
+  .alert p { font-size: 13px; color: var(--ink-dim); line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-logo">Fint<span>Ler</span></div>
+  <div class="topbar-nav">
+    <span class="topbar-link active">Dashboard</span>
+    <span class="topbar-link">Analytics</span>
+    <span class="topbar-link">Assets</span>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-status"><div class="topbar-dot"></div> Gmail Connected</div>
+    <div class="topbar-avatar">AK</div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="welcome">
+    <h1>Welcome back, <span>Arjun</span>.</h1>
+    <p>Here is where your money went this week. No judgment — just clarity.</p>
+  </div>
+
+  <div class="grid grid-12">
+    <!-- Row 1 -->
+    <div class="col-8 card">
+      <div class="card-label">Spending Personality</div>
+      <div class="personality">
+        <div class="personality-badge">🎯</div>
+        <div>
+          <h2>The Weekend Warrior</h2>
+          <p>You spend 62% of your discretionary income on weekends, with peak spending on Friday nights between 10 PM–midnight. Late-night food delivery is your biggest behavioral trigger — averaging ₹4,200/mo.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-4 card">
+      <div class="card-label">Behavioral Insight</div>
+      <div class="insight">
+        <div class="insight-icon" style="background:#F3EDFF;">⚡</div>
+        <h3>Weekend Surge Detected</h3>
+        <p>Your Friday–Sunday spending is 3.2× higher than weekdays. Consider setting a ₹2,000 weekend cap.</p>
+      </div>
+    </div>
+
+    <!-- Row 2: Stats -->
+    <div class="col-4 card">
+      <div class="card-label">Total Debits (30d)</div>
+      <div class="stat-value" style="color:var(--teal);">₹42,500</div>
+      <div class="stat-sub">127 transactions this month</div>
+    </div>
+    <div class="col-4 card">
+      <div class="card-label">Top Category</div>
+      <div class="stat-value" style="color:#8B6FC0;">Food</div>
+      <div class="stat-sub">₹16,200 — 38.1% of spend</div>
+    </div>
+    <div class="col-4 card">
+      <div class="card-label">AI Alert</div>
+      <div class="stat-value" style="color:var(--error);">EMI 20%</div>
+      <div class="stat-sub">of ₹85K take-home salary</div>
+    </div>
+
+    <!-- Row 3: Chart + Goal -->
+    <div class="col-8 card">
+      <div class="card-label">Spending Trend (30 days)</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px;">
+        <div class="stat-value">₹42,500</div>
+        <div style="display:flex;gap:16px;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-muted);"><div style="width:8px;height:8px;border-radius:50%;background:var(--teal);"></div> This Month</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-muted);"><div style="width:8px;height:8px;border-radius:50%;background:#E0E0E0;"></div> Last Month</div>
+        </div>
+      </div>
+      <div class="chart-area">
+        <svg viewBox="0 0 600 160" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="gl" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(0,184,156,0.15)"/>
+              <stop offset="100%" stop-color="rgba(0,184,156,0)"/>
+            </linearGradient>
+          </defs>
+          <path d="M0,130 C50,125 80,70 150,90 C220,110 250,50 300,65 C350,80 400,35 450,50 C500,65 550,25 600,40 L600,160 L0,160 Z" fill="url(#gl)"/>
+          <path d="M0,130 C50,125 80,70 150,90 C220,110 250,50 300,65 C350,80 400,35 450,50 C500,65 550,25 600,40" fill="none" stroke="var(--teal)" stroke-width="2"/>
+          <circle cx="600" cy="40" r="4" fill="var(--teal)"/>
+        </svg>
+      </div>
+    </div>
+    <div class="col-4 card">
+      <div class="card-label">Weekly Goal</div>
+      <div class="goal-amount">₹5,000</div>
+      <div style="font-size:12px;color:var(--ink-muted);">Weekly spending cap</div>
+      <div class="goal-bar"><div class="goal-fill"></div></div>
+      <div class="goal-labels"><span>₹3,100 spent</span><span>₹1,900 left</span></div>
+      <div style="margin-top:16px;display:flex;gap:8px;">
+        <button class="btn btn-teal">Update Goal</button>
+        <button class="btn btn-outline">History</button>
+      </div>
+    </div>
+
+    <!-- Alert -->
+    <div class="col-12 card alert">
+      <div class="alert-badge">⚠ AI Alert</div>
+      <h3>EMI Burden: 20% of Take-Home Pay</h3>
+      <p>Your HDFC auto-debit of ₹8,500/mo consumes 20% of your ₹85K salary. Consider prepaying to reduce the EMI-to-income ratio below 15%. A ₹20,000 prepayment would save you approximately ₹1,200 in interest.</p>
+    </div>
+
+    <!-- Transactions -->
+    <div class="col-12 card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="card-label" style="margin-bottom:0;">Recent Transactions</div>
+        <button class="btn btn-outline">View All</button>
+      </div>
+      <div class="tx-row" style="border-bottom:2px solid #EAE8E4;padding-bottom:10px;">
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-muted);">Date</div>
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-muted);">Merchant</div>
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-muted);">Category</div>
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-muted);text-align:right;">Amount</div>
+      </div>
+      <div class="tx-row">
+        <div class="tx-date">Today, 11:42 PM</div>
+        <div class="tx-merchant"><div class="tx-icon" style="background:#FFF0F0;">🍔</div><div><div class="tx-name">Swiggy</div><div class="tx-sub">Late night order</div></div></div>
+        <div class="tx-cat">Food</div>
+        <div class="tx-amount">−₹780</div>
+      </div>
+      <div class="tx-row">
+        <div class="tx-date">Today, 6:15 PM</div>
+        <div class="tx-merchant"><div class="tx-icon" style="background:#F3EDFF;">🚗</div><div><div class="tx-name">Uber</div><div class="tx-sub">Office → Home</div></div></div>
+        <div class="tx-cat">Transport</div>
+        <div class="tx-amount">−₹320</div>
+      </div>
+      <div class="tx-row">
+        <div class="tx-date">Yesterday, 8:30 PM</div>
+        <div class="tx-merchant"><div class="tx-icon" style="background:#FFF8E8;">🎬</div><div><div class="tx-name">PVR Cinemas</div><div class="tx-sub">Weekend movie</div></div></div>
+        <div class="tx-cat">Entertainment</div>
+        <div class="tx-amount">−₹560</div>
+      </div>
+      <div class="tx-row">
+        <div class="tx-date">Yesterday, 1:20 PM</div>
+        <div class="tx-merchant"><div class="tx-icon" style="background:#E8F5F0;">🛒</div><div><div class="tx-name">BigBasket</div><div class="tx-sub">Weekly groceries</div></div></div>
+        <div class="tx-cat">Groceries</div>
+        <div class="tx-amount">−₹1,850</div>
+      </div>
+      <div class="tx-row">
+        <div class="tx-date">Jul 18, 10:05 AM</div>
+        <div class="tx-merchant"><div class="tx-icon" style="background:#E8F5F0;">💼</div><div><div class="tx-name">TCS</div><div class="tx-sub">Monthly salary credit</div></div></div>
+        <div class="tx-cat" style="background:#E8F5F0;color:var(--teal);">Income</div>
+        <div class="tx-amount income">+₹85,000</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

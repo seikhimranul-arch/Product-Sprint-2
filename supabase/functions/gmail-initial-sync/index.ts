@@ -1,8 +1,9 @@
 // ============================================================
 // FintLer — gmail-initial-sync v3-compatible
 // ============================================================
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'http://localhost:5173'
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE, PATCH',
   'Access-Control-Max-Age': '86400',
@@ -278,17 +279,27 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
   try {
-    const { user_id, provider_token, provider_refresh_token }: SyncRequest = await req.json()
-    if (!user_id || !provider_token) {
-      throw new Error('Missing user_id or provider_token')
-    }
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) return jsonRes({ error: 'Not authenticated.' }, 401)
+
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
       { auth: { persistSession: false } }
     )
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token)
+    if (authErr || !user) return jsonRes({ error: 'Invalid session.' }, 401)
+
+    const { user_id, provider_token, provider_refresh_token }: SyncRequest = await req.json()
+    if (!user_id || !provider_token) {
+      return jsonRes({ error: 'Missing user_id or provider_token' }, 400)
+    }
+    if (user.id !== user_id) return jsonRes({ error: 'User mismatch.' }, 403)
+
     const geminiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!geminiKey) throw new Error('GEMINI_API_KEY not set in Edge Function secrets')
+    if (!geminiKey) return jsonRes({ error: 'GEMINI_API_KEY not set in Edge Function secrets' }, 500)
 
     // Save tokens to profiles (with try/catch in case column is missing)
     try {
@@ -370,33 +381,34 @@ Deno.serve(async (req) => {
     if (transactions.length > 0) {
       const stats = computeStats(transactions)
       insights = await generateInsights(stats, geminiKey)
-      await supabaseAdmin.from('insights').insert({
-        user_id,
-        spending_personality: insights.spending_personality,
-        personality_description: insights.personality_description,
-        summary: insights.summary,
-        category_alert_title: insights.category_alert_title,
-        category_alert_amount: insights.category_alert_amount,
-        category_alert_category: insights.category_alert_category,
-        behavioral_trigger: insights.behavioral_trigger,
-        behavioral_trigger_detail: insights.behavioral_trigger_detail,
-        micro_goal: insights.micro_goal,
-        raw_ai_response: insights,
-      })
+      const insightRows = [
+        { user_id, type: 'personality', title: insights.spending_personality, body: insights.personality_description, severity: 'info' },
+        { user_id, type: 'summary', title: `You spent ₹${Math.round(stats.totalSpent).toLocaleString('en-IN')} in 90 days`, body: insights.summary, severity: 'info' },
+        { user_id, type: 'alert', title: insights.category_alert_title, body: `${insights.category_alert_category}: ₹${Math.round(insights.category_alert_amount)}`, severity: 'medium' },
+        { user_id, type: 'behavioral', title: insights.behavioral_trigger, body: insights.behavioral_trigger_detail, severity: 'info' },
+        { user_id, type: 'goal', title: 'Micro Goal', body: insights.micro_goal, severity: 'info' },
+      ]
+      await supabaseAdmin.from('insights').insert(insightRows)
       await supabaseAdmin.from('profiles').update({
         spending_personality: insights.spending_personality,
       }).eq('id', user_id)
     }
 
-    return new Response(JSON.stringify({
+    return jsonRes({
       success: true, emails_found: messages.length,
       transactions_parsed: transactions.length,
       regex_success: regexSuccess, gemini_success: geminiSuccess,
       failures, insights,
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    })
   } catch (err: any) {
     console.error('Sync error:', err)
-    return new Response(JSON.stringify({ success: false, error: err.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return jsonRes({ success: false, error: err.message }, 500)
   }
 })
+
+function jsonRes(body: object, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}

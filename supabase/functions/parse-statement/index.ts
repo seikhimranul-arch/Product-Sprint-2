@@ -8,12 +8,13 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "http://localhost:5173";
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 const SYSTEM_PROMPT = `You are FintLer, an AI Financial Clarity Engine designed for Indian Salaried Millennials.
 Your goal is to analyze raw bank statement text and provide instant, non-judgmental behavioral insights into spending habits to reduce "Salary Day Spending Anxiety".
@@ -51,7 +52,7 @@ Deno.serve(async (req) => {
     // ----- AUTH -----
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return jsonResponse({ error: "Not authenticated." }, 401);
+      return jsonRes({ error: "Not authenticated." }, 401);
     }
 
     const supabase = createClient(
@@ -63,19 +64,19 @@ Deno.serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
     if (authErr || !user) {
-      return jsonResponse({ error: "Invalid session." }, 401);
+      return jsonRes({ error: "Invalid session." }, 401);
     }
 
     // ----- INPUT -----
     const { statement_text, statement_id } = await req.json();
     if (!statement_text || typeof statement_text !== "string" || statement_text.trim().length === 0) {
-      return jsonResponse({ error: "No statement data provided." }, 400);
+      return jsonRes({ error: "No statement data provided." }, 400);
     }
 
     // ----- CALL GEMINI API -----
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
     if (!geminiKey) {
-      return jsonResponse({ error: "AI service is not configured on the server." }, 500);
+      return jsonRes({ error: "AI service is not configured on the server." }, 500);
     }
 
     const userMessage = `STATEMENT TEXT:\n${statement_text.substring(0, 30000)}`; // limit size to prevent context overflow
@@ -103,11 +104,11 @@ Deno.serve(async (req) => {
 
     if (!geminiRes.ok) {
       if (geminiRes.status === 429) {
-        return jsonResponse({ error: "AI is rate-limited — try again in a moment." }, 429);
+        return jsonRes({ error: "AI is rate-limited — try again in a moment." }, 429);
       }
       const errText = await geminiRes.text();
       console.error("Gemini error:", geminiRes.status, errText);
-      return jsonResponse({ error: "AI service is temporarily unavailable." }, 500);
+      return jsonRes({ error: "AI service is temporarily unavailable." }, 500);
     }
 
     const geminiJson = await geminiRes.json();
@@ -118,31 +119,29 @@ Deno.serve(async (req) => {
       parsed = JSON.parse(rawText);
     } catch {
       console.error("Failed to parse Gemini output:", rawText);
-      return jsonResponse({ error: "AI returned an unexpected response. Please ensure the statement is readable." }, 500);
+      return jsonRes({ error: "AI returned an unexpected response. Please ensure the statement is readable." }, 500);
     }
 
     // Validate expected fields
     if (!parsed.summary || !parsed.category_alert || !parsed.behavioral_trigger || !parsed.recommendation || !parsed.spending_personality) {
-      return jsonResponse({ error: "AI failed to generate all required insights." }, 500);
+      return jsonRes({ error: "AI failed to generate all required insights." }, 500);
     }
 
     // ----- SAVE INSIGHTS TO DATABASE -----
-    const { data: newInsight, error: insertErr } = await supabase
+    const insightRows = [
+      { user_id: user.id, type: 'personality', title: parsed.spending_personality, body: `Spending personality identified from statement analysis.`, severity: 'info' },
+      { user_id: user.id, type: 'summary', title: 'Statement Summary', body: parsed.summary, severity: 'info' },
+      { user_id: user.id, type: 'alert', title: 'Category Alert', body: parsed.category_alert, severity: 'medium' },
+      { user_id: user.id, type: 'behavioral', title: parsed.behavioral_trigger, body: parsed.behavioral_trigger, severity: 'info' },
+      { user_id: user.id, type: 'goal', title: 'Recommendation', body: parsed.recommendation, severity: 'info' },
+    ];
+
+    const { error: insertErr } = await supabase
       .from("insights")
-      .insert({
-        user_id: user.id,
-        statement_id: statement_id || null,
-        summary_text: parsed.summary,
-        category_alert_text: parsed.category_alert,
-        behavioral_trigger_text: parsed.behavioral_trigger,
-        recommendation_text: parsed.recommendation
-      })
-      .select("*")
-      .single();
+      .insert(insightRows);
 
     if (insertErr) {
       console.error("Failed to save insights:", insertErr);
-      // We can still return the insights even if saving failed, but it's better to log it.
     }
 
     // Update user profile with personality
@@ -160,20 +159,19 @@ Deno.serve(async (req) => {
     }
 
     // ----- RETURN SUCCESS -----
-    return jsonResponse({ 
+    return jsonRes({ 
       success: true, 
-      insights: newInsight || parsed, 
+      insights: parsed, 
       personality: parsed.spending_personality 
     });
 
   } catch (err) {
     console.error("parse-statement error:", err);
-    return jsonResponse({ error: "Something went wrong. Please try again." }, 500);
+    return jsonRes({ error: "Something went wrong. Please try again." }, 500);
   }
 });
 
-// Helper: consistent JSON response with CORS
-function jsonResponse(body: any, status = 200) {
+function jsonRes(body: any, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

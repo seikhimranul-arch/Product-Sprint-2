@@ -17,8 +17,8 @@ export const supabase =
     ? createClient(supabaseUrl, supabaseAnonKey)
     : null;
 
-if (!supabase) {
+if (!supabase && import.meta.env.VITE_ENABLE_DEMO_MODE === "true" && import.meta.env.PROD !== true) {
   console.warn(
-    "⚠️ Valid Supabase credentials not found. Running in demo mode with mock data."
+    "Valid Supabase credentials not found. Running in explicit local demo mode."
   );
 }

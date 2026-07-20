@@ -1,45 +1,33 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 
 const AuthContext = createContext(null);
 
+const DEMO_USER = { id: 'demo-user-001', email: 'arjun.kumar@gmail.com', user_metadata: { full_name: 'Arjun Kumar' } };
+const demoModeEnabled = import.meta.env.VITE_ENABLE_DEMO_MODE === "true" && import.meta.env.PROD !== true;
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Provider tokens are only available on the INITIAL auth event.
-  // Supabase fires multiple events (INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED)
-  // and later events DON'T include provider_token, which overwrites it to null.
-  // We preserve them in a ref so they survive across re-renders and events.
+  const [loading, setLoading] = useState(Boolean(supabase));
   const providerTokenRef = useRef(null);
   const providerRefreshTokenRef = useRef(null);
 
   useEffect(() => {
     if (!supabase) {
-      setLoading(false);
       return;
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      // Capture provider tokens ONLY when they exist (first auth event)
-      if (newSession?.provider_token) {
-        providerTokenRef.current = newSession.provider_token;
-      }
-      if (newSession?.provider_refresh_token) {
-        providerRefreshTokenRef.current = newSession.provider_refresh_token;
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (newSession?.provider_token) providerTokenRef.current = newSession.provider_token;
+      if (newSession?.provider_refresh_token) providerRefreshTokenRef.current = newSession.provider_refresh_token;
 
-      // Build session with preserved provider tokens
-      const enrichedSession = newSession
-        ? {
-            ...newSession,
-            provider_token: newSession.provider_token || providerTokenRef.current,
-            provider_refresh_token: newSession.provider_refresh_token || providerRefreshTokenRef.current,
-          }
-        : null;
-
-      setSession(enrichedSession);
+      setSession(newSession ? {
+        ...newSession,
+        provider_token: newSession.provider_token || providerTokenRef.current,
+        provider_refresh_token: newSession.provider_refresh_token || providerRefreshTokenRef.current,
+      } : null);
       setUser(newSession?.user ?? null);
       setLoading(false);
     });
@@ -49,8 +37,11 @@ export function AuthProvider({ children }) {
 
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) {
-      setUser({ email: "demo@fintler.app", user_metadata: { full_name: "Demo User" } });
-      setLoading(false);
+      if (!demoModeEnabled) {
+        return { error: new Error("Supabase is not configured. Set VITE_ENABLE_DEMO_MODE=true for local demos only.") };
+      }
+      setUser(DEMO_USER);
+      setSession({ access_token: 'demo', user: DEMO_USER });
       return { error: null };
     }
 
@@ -69,15 +60,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    if (!supabase) {
-      setUser(null);
-      setSession(null);
-      return;
-    }
-    // Clear stored provider tokens
     providerTokenRef.current = null;
     providerRefreshTokenRef.current = null;
-    await supabase.auth.signOut();
+    if (supabase) await supabase.auth.signOut();
     setUser(null);
     setSession(null);
   }, []);

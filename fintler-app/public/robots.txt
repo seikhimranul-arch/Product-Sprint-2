@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://fintlerai.netlify.app/sitemap.xml

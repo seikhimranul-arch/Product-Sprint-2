@@ -1,95 +1,48 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../lib/supabase";
+import { demoTransactions } from "../lib/mockData";
 
 export default function useAnalyticsData() {
-  const { user } = useAuth();
-  const [txs, setTxs] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
-    if (!user || !supabase) {
-      setLoading(false);
-      setTxs([]);
-      return;
-    }
-    async function fetchTxs() {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("transactions")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("type", "debit")
-          .order("transaction_date", { ascending: false });
-        if (error) console.error("Analytics fetch error:", error);
-        setTxs(data || []);
-      } catch (e) {
-        console.error("Analytics fetch exception:", e);
-        setTxs([]);
-      }
-      setLoading(false);
-    }
-    fetchTxs();
-  }, [user, refreshKey]);
+    const t = setTimeout(() => setLoading(false), 200);
+    return () => clearTimeout(t);
+  }, []);
 
-  const totalSpend = useMemo(() => {
-    if (!txs) return 0;
-    return txs.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-  }, [txs]);
+  const debits = useMemo(
+    () => demoTransactions.filter((t) => t.type === "debit"),
+    []
+  );
+
+  const totalSpend = useMemo(
+    () => debits.reduce((sum, t) => sum + t.amount, 0),
+    [debits]
+  );
 
   const sortedCategories = useMemo(() => {
-    if (!txs) return [];
-    const categoryMap = {};
-    txs.forEach((t) => {
-      const cat = t.category || "Uncategorized";
-      categoryMap[cat] = (categoryMap[cat] || 0) + parseFloat(t.amount || 0);
-    });
-    return Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
-  }, [txs]);
+    const map = {};
+    debits.forEach((t) => { map[t.category] = (map[t.category] || 0) + t.amount; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [debits]);
 
-  const dayData = useMemo(() => {
-    if (!txs) return { dayMap: {}, maxDaySpend: 1 };
-    const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-    const dayMap = { monday: 0, tuesday: 0, wednesday: 0, thursday: 0, friday: 0, saturday: 0, sunday: 0 };
-    const dayCount = { monday: 0, tuesday: 0, wednesday: 0, thursday: 0, friday: 0, saturday: 0, sunday: 0 };
-    txs.forEach((t) => {
-      const d = new Date(t.transaction_date || t.created_at);
-      if (!isNaN(d)) {
-        const dayName = dayNames[d.getDay()];
-        dayMap[dayName] += parseFloat(t.amount || 0);
-        dayCount[dayName]++;
-      }
-    });
-    const maxDaySpend = Math.max(...Object.values(dayMap), 1);
-    return { dayMap, maxDaySpend, dayCount };
-  }, [txs]);
+  const dayMap = useMemo(() => {
+    const m = { monday: 0, tuesday: 0, wednesday: 0, thursday: 0, friday: 0, saturday: 0, sunday: 0 };
+    debits.forEach((t) => { if (m[t.day_of_week] !== undefined) m[t.day_of_week] += t.amount; });
+    return m;
+  }, [debits]);
+
+  const maxDaySpend = useMemo(
+    () => Math.max(...Object.values(dayMap)),
+    [dayMap]
+  );
 
   const topMerchants = useMemo(() => {
-    if (!txs) return [];
-    const merchantMap = {};
-    txs.forEach((t) => {
-      if (t.merchant) {
-        merchantMap[t.merchant] = (merchantMap[t.merchant] || 0) + parseFloat(t.amount || 0);
-      }
-    });
-    return Object.entries(merchantMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8);
-  }, [txs]);
+    const map = {};
+    debits.forEach((t) => { map[t.merchant] = (map[t.merchant] || 0) + t.amount; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  }, [debits]);
 
-  return {
-    txs,
-    loading,
-    totalSpend,
-    sortedCategories,
-    dayMap: dayData.dayMap,
-    maxDaySpend: dayData.maxDaySpend,
-    dayCount: dayData.dayCount,
-    topMerchants,
-    refresh,
-  };
+  const refresh = useCallback(() => {}, []);
+
+  return { txs: debits, loading, totalSpend, sortedCategories, dayMap, maxDaySpend, topMerchants, refresh };
 }

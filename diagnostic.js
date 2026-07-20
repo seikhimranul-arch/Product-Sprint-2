@@ -6,18 +6,17 @@
 
   // Step 1: Check Supabase session
   const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-  const supabase = createClient(
-    "https://qfgrmwvqykpgkncigjnt.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmZ3Jtd3ZxeWtwZ2tuY2lnam50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgxOTg5NTksImV4cCI6MjA2Mzc3NDk1OX0.yOBqMPwxyz5dnJBdHjZIRMVRvlkba9t6_YdN8JIRJCQ"
-  );
+  const SUPABASE_URL = "https://your-project.supabase.co";
+  const SUPABASE_ANON_KEY = "your-anon-key";
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const { data: { session } } = await supabase.auth.getSession();
   
   console.log("STEP 1 — Session:");
   console.log("  user:", session?.user?.email || "NO USER");
-  console.log("  provider_token:", session?.provider_token ? `YES (${session.provider_token.substring(0,20)}...)` : "NULL");
+  console.log("  provider_token:", session?.provider_token ? "PRESENT" : "NULL");
   console.log("  provider_refresh_token:", session?.provider_refresh_token ? "YES" : "NULL");
-  console.log("  access_token (JWT):", session?.access_token ? `YES (${session.access_token.substring(0,20)}...)` : "NULL");
+  console.log("  access_token (JWT):", session?.access_token ? "PRESENT" : "NULL");
 
   if (!session) { console.error("FAIL: No session. Sign in first."); return; }
 
@@ -25,14 +24,14 @@
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
   console.log("\nSTEP 2 — Stored profile:");
   console.log("  gmail_sync_enabled:", profile?.gmail_sync_enabled);
-  console.log("  gmail_access_token:", profile?.gmail_access_token ? `YES (${profile.gmail_access_token.substring(0,20)}...)` : "NULL");
-  console.log("  gmail_refresh_token:", profile?.gmail_refresh_token ? "YES" : "NULL");
-  console.log("  gmail_token_expiry:", profile?.gmail_token_expiry);
+  console.log("  gmail_access_token:", profile?.gmail_access_token ? "PRESENT" : "NULL");
+  console.log("  gmail_refresh_token:", profile?.gmail_refresh_token ? "PRESENT" : "NULL");
+  console.log("  gmail_token_expiry:", profile?.gmail_token_expiry ? "PRESENT" : "NULL");
 
   // Step 3: Test Gmail API directly with whatever token we have
   const gmailToken = session.provider_token || profile?.gmail_access_token;
   console.log("\nSTEP 3 — Gmail API test:");
-  console.log("  Using token:", gmailToken ? `YES (${gmailToken.substring(0,20)}...)` : "NO TOKEN AVAILABLE");
+  console.log("  Using token:", gmailToken ? "PRESENT" : "NO TOKEN AVAILABLE");
 
   if (!gmailToken) {
     console.error("FAIL: No Gmail token anywhere. Need to re-sign-in with Google.");
@@ -87,7 +86,7 @@
 
     // Extract body
     const body = extractBody(msgData.payload);
-    console.log("  Body preview:", body?.substring(0, 200) || "EMPTY");
+    console.log("  Body present:", body ? "YES" : "EMPTY");
   }
 
   // Step 5: Test the edge function

@@ -40,6 +40,7 @@ export default function Waitlist() {
         setSubmitted(true);
       }
     } catch (err) {
+      console.error(err);
       setError("Network error. Please check your connection.");
     }
     setLoading(false);

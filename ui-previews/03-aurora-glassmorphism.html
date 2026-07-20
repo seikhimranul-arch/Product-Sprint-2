@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FintLer — Direction 3: Glassmorphism Aurora</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050510; --teal: #00DFC1; --purple: #BB86FC; --blue: #4A90FF;
+    --error: #FF6B6B; --gold: #FFD700;
+    --glass: rgba(255,255,255,0.04); --glass-border: rgba(255,255,255,0.08);
+    --glass-hover: rgba(255,255,255,0.07);
+    --text: #E8E8E8; --text-dim: #8A8A9A; --text-muted: #4A4A5A;
+    --mono: 'JetBrains Mono', monospace; --sans: 'Inter', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--sans); background: var(--bg); color: var(--text);
+    overflow-x: hidden; min-height: 100vh;
+  }
+
+  /* Aurora background */
+  .aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .aurora-orb { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.25; }
+  .aurora-1 { width: 600px; height: 600px; background: var(--teal); top: -200px; left: -100px; animation: float1 20s ease-in-out infinite; }
+  .aurora-2 { width: 500px; height: 500px; background: var(--purple); bottom: -150px; right: -100px; animation: float2 25s ease-in-out infinite; }
+  .aurora-3 { width: 400px; height: 400px; background: var(--blue); top: 40%; left: 50%; animation: float3 18s ease-in-out infinite; }
+  @keyframes float1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(80px,60px) scale(1.1); } }
+  @keyframes float2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-60px,-80px) scale(1.15); } }
+  @keyframes float3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-40px,40px) scale(0.9); } }
+
+  /* Grain */
+  .grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  }
+
+  .app { position: relative; z-index: 2; }
+
+  /* Navbar */
+  .navbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; background: rgba(5,5,16,0.6); backdrop-filter: blur(24px) saturate(1.2);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .nav-logo { font-size: 18px; font-weight: 700; color: var(--teal); }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 500;
+    color: var(--text-dim); cursor: pointer; transition: all 0.2s; border: none; background: none;
+  }
+  .nav-tab:hover { color: var(--text); background: var(--glass); }
+  .nav-tab.active { color: var(--teal); background: rgba(0,223,193,0.08); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .nav-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--teal); }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); animation: blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .nav-avatar {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: var(--glass); border: 1px solid var(--glass-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: var(--teal);
+  }
+
+  /* Content */
+  .content { max-width: 1300px; margin: 0 auto; padding: 96px 24px 48px; }
+  .welcome { margin-bottom: 32px; }
+  .welcome h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .welcome h1 span { color: var(--teal); }
+  .welcome p { font-size: 14px; color: var(--text-dim); }
+
+  /* Glass card */
+  .glass {
+    background: var(--glass); backdrop-filter: blur(20px) saturate(1.2);
+    border: 1px solid var(--glass-border); border-radius: 16px;
+    padding: 24px; transition: all 0.3s;
+  }
+  .glass:hover { background: var(--glass-hover); border-color: rgba(255,255,255,0.12); }
+  .glass-glow-teal { box-shadow: 0 0 40px rgba(0,223,193,0.06), inset 0 1px 0 rgba(0,223,193,0.08); }
+  .glass-glow-purple { box-shadow: 0 0 40px rgba(187,134,252,0.06), inset 0 1px 0 rgba(187,134,252,0.08); }
+  .glass-glow-gold { box-shadow: 0 0 40px rgba(255,215,0,0.06), inset 0 1px 0 rgba(255,215,0,0.08); }
+
+  .grid { display: grid; gap: 16px; }
+  .grid-12 { grid-template-columns: repeat(12, 1fr); }
+  .col-8 { grid-column: span 8; }
+  .col-4 { grid-column: span 4; }
+  .col-12 { grid-column: span 12; }
+  .col-6 { grid-column: span 6; }
+  .label { font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+  .value { font-size: 28px; font-weight: 700; }
+
+  /* Personality */
+  .personality { display: flex; gap: 24px; align-items: center; }
+  .personality-emoji { width: 64px; height: 64px; border-radius: 16px; background: rgba(0,223,193,0.06); border: 1px solid rgba(0,223,193,0.12); display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+  .personality h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .personality p { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+
+  /* Insight */
+  .insight-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 16px; }
+  .insight h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .insight p { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+
+  /* Stats */
+  .stat-row { display: flex; gap: 16px; margin-bottom: 16px; }
+  .stat { flex: 1; }
+  .stat .value { font-size: 24px; }
+  .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+  /* Chart */
+  .chart-container { position: relative; height: 180px; margin-top: 16px; }
+  .chart-container svg { width: 100%; height: 100%; }
+
+  /* Goal */
+  .goal-row { display: flex; align-items: center; gap: 24px; }
+  .goal-amount { font-size: 32px; font-weight: 700; color: var(--gold); }
+  .goal-bar { flex: 1; }
+  .goal-bar-bg { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; margin: 8px 0; }
+  .goal-bar-fill { height: 100%; width: 62%; background: linear-gradient(90deg, var(--gold), var(--teal)); border-radius: 3px; }
+  .goal-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+    border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .btn-teal { background: rgba(0,223,193,0.1); color: var(--teal); border: 1px solid rgba(0,223,193,0.2); }
+  .btn-teal:hover { background: rgba(0,223,193,0.18); }
+  .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--glass-border); }
+  .btn-ghost:hover { background: var(--glass); color: var(--text); }
+
+  /* Transactions */
+  .tx-row { display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.04); align-items: center; }
+  .tx-row:last-child { border-bottom: none; }
+  .tx-date { font-size: 12px; color: var(--text-muted); }
+  .tx-merchant { display: flex; align-items: center; gap: 10px; }
+  .tx-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .tx-name { font-size: 13px; font-weight: 500; }
+  .tx-sub { font-size: 11px; color: var(--text-muted); }
+  .tx-cat { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: var(--glass); color: var(--text-dim); display: inline-block; }
+  .tx-amount { font-size: 13px; font-weight: 600; text-align: right; font-family: var(--mono); }
+  .tx-amount.income { color: var(--teal); }
+
+  /* Alert */
+  .alert-card { border-color: rgba(255,107,107,0.15); background: rgba(255,107,107,0.03); }
+  .alert-badge { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--error); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+  .alert-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .alert-card p { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+
+  /* AI border animation */
+  .ai-border {
+    position: relative; overflow: hidden;
+  }
+  .ai-border::before {
+    content: ''; position: absolute; inset: -2px; border-radius: 18px; padding: 2px;
+    background: linear-gradient(90deg, var(--teal), var(--purple), var(--blue), var(--teal));
+    background-size: 300% 100%; animation: gradientMove 4s linear infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+  }
+  @keyframes gradientMove { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+</style>
+</head>
+<body>
+<div class="aurora">
+  <div class="aurora-orb aurora-1"></div>
+  <div class="aurora-orb aurora-2"></div>
+  <div class="aurora-orb aurora-3"></div>
+</div>
+<div class="grain"></div>
+
+<div class="app">
+  <nav class="navbar">
+    <div class="nav-logo">FintLer</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active">Dashboard</button>
+      <button class="nav-tab">Analytics</button>
+      <button class="nav-tab">Assets</button>
+    </div>
+    <div class="nav-right">
+      <div class="nav-status"><div class="nav-dot"></div> Gmail Connected</div>
+      <div class="nav-avatar">AK</div>
+    </div>
+  </nav>
+
+  <div class="content">
+    <div class="welcome">
+      <h1>Welcome back, <span>Arjun</span>.</h1>
+      <p>Here is your financial clarity for the week.</p>
+    </div>
+
+    <div class="grid grid-12">
+      <!-- Row 1: Personality + Insight -->
+      <div class="col-8 glass glass-glow-teal">
+        <div class="label">Spending Personality</div>
+        <div class="personality">
+          <div class="personality-emoji">🎯</div>
+          <div>
+            <h2>The Weekend Warrior</h2>
+            <p>You spend 62% of your discretionary income on weekends, with peak spending on Friday nights between 10 PM–midnight. Late-night food delivery is your biggest behavioral trigger — averaging ₹4,200/mo.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-4 glass glass-glow-purple">
+        <div class="label">Behavioral Insight</div>
+        <div class="insight">
+          <div class="insight-icon" style="background:rgba(187,134,252,0.1);">⚡</div>
+          <h3>Weekend Surge Detected</h3>
+          <p>Your Friday–Sunday spending is 3.2× higher than weekdays. Consider setting a ₹2,000 weekend cap.</p>
+        </div>
+      </div>
+
+      <!-- Row 2: Stats -->
+      <div class="col-4 glass">
+        <div class="stat">
+          <div class="label">Total Debits (30d)</div>
+          <div class="value" style="color:var(--teal);">₹42,500</div>
+          <div class="stat-sub">127 transactions this month</div>
+        </div>
+      </div>
+      <div class="col-4 glass">
+        <div class="stat">
+          <div class="label">Top Category</div>
+          <div class="value" style="color:var(--purple);">Food</div>
+          <div class="stat-sub">₹16,200 — 38.1% of spend</div>
+        </div>
+      </div>
+      <div class="col-4 glass glass-glow-gold">
+        <div class="stat">
+          <div class="label">Weekly Goal</div>
+          <div class="value" style="color:var(--gold);">₹5,000</div>
+          <div class="goal-bar-bg" style="margin-top:10px;"><div class="goal-bar-fill"></div></div>
+          <div class="goal-labels"><span>₹3,100 spent</span><span>4 days left</span></div>
+        </div>
+      </div>
+
+      <!-- Row 3: Chart -->
+      <div class="col-8 glass">
+        <div class="label">Spending Trend (30 days)</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+          <div class="value">₹42,500</div>
+          <div style="display:flex;gap:16px;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);"><div style="width:8px;height:8px;border-radius:50%;background:var(--teal);"></div> This Month</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);"><div style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.1);"></div> Last Month</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <svg viewBox="0 0 600 140" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="ga" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="rgba(0,223,193,0.3)"/>
+                <stop offset="100%" stop-color="rgba(0,223,193,0)"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,120 C50,115 80,60 150,80 C220,100 250,40 300,55 C350,70 400,30 450,45 C500,60 550,20 600,35 L600,140 L0,140 Z" fill="url(#ga)"/>
+            <path d="M0,120 C50,115 80,60 150,80 C220,100 250,40 300,55 C350,70 400,30 450,45 C500,60 550,20 600,35" fill="none" stroke="var(--teal)" stroke-width="2" filter="drop-shadow(0 0 8px rgba(0,223,193,0.5))"/>
+            <circle cx="600" cy="35" r="4" fill="var(--teal)"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Goal card -->
+      <div class="col-4 glass glass-glow-gold">
+        <div class="label">Weekly Goal</div>
+        <div class="goal-amount">₹5,000</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">Weekly spending cap</div>
+        <div class="goal-bar-bg" style="margin-top:16px;"><div class="goal-bar-fill"></div></div>
+        <div class="goal-labels"><span>₹3,100 spent</span><span>₹1,900 left</span></div>
+        <div style="margin-top:16px;display:flex;gap:8px;">
+          <button class="btn btn-teal">Update Goal</button>
+          <button class="btn btn-ghost">History</button>
+        </div>
+      </div>
+
+      <!-- Alert -->
+      <div class="col-12 glass alert-card">
+        <div class="alert-badge">⚠ AI Alert</div>
+        <h3>EMI Burden: 20% of Take-Home Pay</h3>
+        <p>Your HDFC auto-debit of ₹8,500/mo consumes 20% of your ₹85K salary. Consider prepaying to reduce the EMI-to-income ratio below 15%.</p>
+      </div>
+
+      <!-- Transactions -->
+      <div class="col-12 glass">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div class="label" style="margin-bottom:0;">Recent Transactions</div>
+          <button class="btn btn-ghost">View All</button>
+        </div>
+        <div class="tx-row" style="border-bottom:1px solid var(--glass-border);padding-bottom:8px;margin-bottom:4px;">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);">Date</div>
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);">Merchant</div>
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);">Category</div>
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);text-align:right;">Amount</div>
+        </div>
+        <div class="tx-row">
+          <div class="tx-date">Today, 11:42 PM</div>
+          <div class="tx-merchant"><div class="tx-icon" style="background:rgba(255,107,107,0.1);">🍔</div><div><div class="tx-name">Swiggy</div><div class="tx-sub">Late night order</div></div></div>
+          <div class="tx-cat">Food</div>
+          <div class="tx-amount">−₹780</div>
+        </div>
+        <div class="tx-row">
+          <div class="tx-date">Today, 6:15 PM</div>
+          <div class="tx-merchant"><div class="tx-icon" style="background:rgba(187,134,252,0.1);">🚗</div><div><div class="tx-name">Uber</div><div class="tx-sub">Office → Home</div></div></div>
+          <div class="tx-cat">Transport</div>
+          <div class="tx-amount">−₹320</div>
+        </div>
+        <div class="tx-row">
+          <div class="tx-date">Yesterday, 8:30 PM</div>
+          <div class="tx-merchant"><div class="tx-icon" style="background:rgba(255,215,0,0.1);">🎬</div><div><div class="tx-name">PVR Cinemas</div><div class="tx-sub">Weekend movie</div></div></div>
+          <div class="tx-cat">Entertainment</div>
+          <div class="tx-amount">−₹560</div>
+        </div>
+        <div class="tx-row">
+          <div class="tx-date">Yesterday, 1:20 PM</div>
+          <div class="tx-merchant"><div class="tx-icon" style="background:rgba(0,223,193,0.08);">🛒</div><div><div class="tx-name">BigBasket</div><div class="tx-sub">Weekly groceries</div></div></div>
+          <div class="tx-cat">Groceries</div>
+          <div class="tx-amount">−₹1,850</div>
+        </div>
+        <div class="tx-row">
+          <div class="tx-date">Jul 18, 10:05 AM</div>
+          <div class="tx-merchant"><div class="tx-icon" style="background:rgba(0,223,193,0.08);">💼</div><div><div class="tx-name">TCS</div><div class="tx-sub">Monthly salary credit</div></div></div>
+          <div class="tx-cat" style="color:var(--teal);">Income</div>
+          <div class="tx-amount income">+₹85,000</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

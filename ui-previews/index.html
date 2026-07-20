@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FintLer — UI/UX Design Directions</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #0A0A0F; --surface: #14141E; --border: #222230; --teal: #00DFC1; --purple: #BB86FC; --gold: #FFD700; --error: #FF6B6B; --text: #E8E8E8; --text-dim: #8A8A9A; --text-muted: #5A5A6A; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .hero { text-align: center; padding: 80px 32px 40px; }
+  .hero h1 { font-size: 42px; font-weight: 700; margin-bottom: 12px; }
+  .hero h1 span { color: var(--teal); }
+  .hero p { font-size: 16px; color: var(--text-dim); max-width: 600px; margin: 0 auto; line-height: 1.6; }
+  .hero .sub { font-size: 12px; color: var(--text-muted); margin-top: 16px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px; max-width: 1200px; margin: 0 auto; padding: 20px 32px 80px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    overflow: hidden; transition: all 0.3s; cursor: pointer; text-decoration: none; color: inherit; display: block;
+  }
+  .card:hover { border-color: rgba(0,223,193,0.3); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+
+  .card-preview { height: 220px; position: relative; overflow: hidden; }
+  .card-preview iframe { width: 200%; height: 200%; transform: scale(0.5); transform-origin: top left; border: none; pointer-events: none; }
+
+  .card-info { padding: 20px; }
+  .card-num { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .card-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .card-desc { font-size: 13px; color: var(--text-dim); line-height: 1.6; margin-bottom: 12px; }
+  .card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-size: 10px; font-weight: 500; padding: 3px 8px; border-radius: 4px; background: rgba(255,255,255,0.04); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.06); }
+  .tag.teal { color: var(--teal); border-color: rgba(0,223,193,0.2); background: rgba(0,223,193,0.06); }
+  .tag.purple { color: var(--purple); border-color: rgba(187,134,252,0.2); background: rgba(187,134,252,0.06); }
+  .tag.gold { color: var(--gold); border-color: rgba(255,215,0,0.2); background: rgba(255,215,0,0.06); }
+  .tag.blue { color: #3B82F6; border-color: rgba(59,130,246,0.2); background: rgba(59,130,246,0.06); }
+
+  .card-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: var(--teal); margin-top: 12px; }
+  .card-link::after { content: '→'; }
+
+  .note { text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>FintLer <span>UI/UX</span> Directions</h1>
+  <p>Design directions and device-optimized previews for the FintLer dashboard. Click to open full-size.</p>
+  <div class="sub">All previews use the same mock data — Arjun Kumar, ₹42,500 spend, Weekend Warrior personality, ₹5,000 goal.</div>
+</div>
+
+<div class="grid">
+  <a class="card" href="01-basalt-matte-dark.html" target="_blank">
+    <div class="card-preview" style="background:#0E0E0E;">
+      <iframe src="01-basalt-matte-dark.html" scrolling="no"></iframe>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Direction 01</div>
+      <div class="card-title">Basalt Matte Dark</div>
+      <div class="card-desc">3-tier luminance hierarchy. Matte surfaces, no glass blur. Dense data-first layout with sidebar navigation. Inspired by Basalt design system.</div>
+      <div class="card-tags">
+        <span class="tag teal">Sidebar Nav</span>
+        <span class="tag">Matte Finish</span>
+        <span class="tag">Dense Info</span>
+        <span class="tag">Subtle Glow</span>
+      </div>
+      <div class="card-link">Open Preview</div>
+    </div>
+  </a>
+
+  <a class="card" href="02-obsidian-editorial.html" target="_blank">
+    <div class="card-preview" style="background:#111111;">
+      <iframe src="02-obsidian-editorial.html" scrolling="no"></iframe>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Direction 02</div>
+      <div class="card-title">Obsidian Editorial</div>
+      <div class="card-desc">Cinematic minimalism with serif typography, Roman numeral sections, and warm cream/gold accents. Inspired by A24 and high-fashion editorial design.</div>
+      <div class="card-tags">
+        <span class="tag gold">Serif Typography</span>
+        <span class="tag purple">Editorial Layout</span>
+        <span class="tag">Warm Cream</span>
+        <span class="tag">Asymmetric</span>
+      </div>
+      <div class="card-link">Open Preview</div>
+    </div>
+  </a>
+
+  <a class="card" href="03-aurora-glassmorphism.html" target="_blank">
+    <div class="card-preview" style="background:#050510;">
+      <iframe src="03-aurora-glassmorphism.html" scrolling="no"></iframe>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Direction 03</div>
+      <div class="card-title">Aurora Glassmorphism</div>
+      <div class="card-desc">Full glass blur with floating aurora orbs, animated gradient borders, grain texture, and deep space dark. Premium fintech feel with glowing accents.</div>
+      <div class="card-tags">
+        <span class="tag teal">Glass Blur</span>
+        <span class="tag purple">Aurora Orbs</span>
+        <span class="tag">Animated Borders</span>
+        <span class="tag">Grain Texture</span>
+      </div>
+      <div class="card-link">Open Preview</div>
+    </div>
+  </a>
+
+  <a class="card" href="04-warm-minimal-luxury.html" target="_blank">
+    <div class="card-preview" style="background:#FAF8F5;">
+      <iframe src="04-warm-minimal-luxury.html" scrolling="no"></iframe>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Direction 04</div>
+      <div class="card-title">Warm Minimal Luxury</div>
+      <div class="card-desc">Light background, warm cream surfaces, generous whitespace, serif headlines. Clean and calming — the anti-finance app. Inspired by luxury editorial sites.</div>
+      <div class="card-tags">
+        <span class="tag gold">Light Theme</span>
+        <span class="tag">Warm Cream</span>
+        <span class="tag">Minimal</span>
+        <span class="tag purple">Serif Display</span>
+      </div>
+      <div class="card-link">Open Preview</div>
+    </div>
+  </a>
+
+  <a class="card" href="05-neo-bloomberg-terminal.html" target="_blank">
+    <div class="card-preview" style="background:#0D0D12;">
+      <iframe src="05-neo-bloomberg-terminal.html" scrolling="no"></iframe>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Direction 05</div>
+      <div class="card-title">Neo-Bloomberg Terminal</div>
+      <div class="card-desc">Dense data-first interface with monospace labels, live ticker strip, sidebar nav, compact cards, and real-time feed. Professional terminal aesthetic.</div>
+      <div class="card-tags">
+        <span class="tag teal">Terminal Aesthetic</span>
+        <span class="tag">Monospace</span>
+        <span class="tag">Dense Layout</span>
+        <span class="tag gold">Live Ticker</span>
+      </div>
+      <div class="card-link">Open Preview</div>
+    </div>
+  </a>
+
+  <a class="card" href="06-lit-school-bold.html" target="_blank">
+    <div class="card-preview" style="background:#0B0D11;">
+      <iframe src="06-lit-school-bold.html" scrolling="no"></iframe>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Direction 06</div>
+      <div class="card-title">LIT School Bold</div>
+      <div class="card-desc">Bold hero-first dashboard with blue accent, live ticker pills, metric grid, section headers with pills, glowing borders. Inspired by LIT School's energetic design.</div>
+      <div class="card-tags">
+        <span class="tag blue">Hero Section</span>
+        <span class="tag gold">Bold Typography</span>
+        <span class="tag teal">Pill Badges</span>
+        <span class="tag">Glow Borders</span>
+      </div>
+      <div class="card-link">Open Preview</div>
+    </div>
+  </a>
+
+  <a class="card" href="07-final-fusion.html" target="_blank" style="border-color:rgba(0,223,193,0.3);">
+    <div class="card-preview" style="background:#0A0A0E;position:relative;">
+      <div style="position:absolute;top:8px;right:8px;z-index:10;background:var(--teal);color:#000;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.05em;">★ FINAL · RESPONSIVE</div>
+      <iframe src="07-final-fusion.html" scrolling="no"></iframe>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Final Build ★</div>
+      <div class="card-title" style="color:var(--teal);">FintLer Signature — Responsive</div>
+      <div class="card-desc">Complete responsive build — desktop, tablet, mobile. Sidebar collapses to hamburger, grid stacks, transactions scroll horizontally. Animations: goal pop, alert pulse, tx hover glow, loading spinner, bar rise.</div>
+      <div class="card-tags">
+        <span class="tag teal">Desktop + Tablet + Phone</span>
+        <span class="tag teal">Hamburger Nav</span>
+        <span class="tag teal">Goal Pop</span>
+        <span class="tag teal">Tx Hover Glow</span>
+        <span class="tag teal">Loading Spinner</span>
+      </div>
+      <div class="card-link">Open Preview</div>
+    </div>
+  </a>
+</div>
+
+<div style="max-width:1200px;margin:0 auto;padding:0 32px">
+  <div style="text-align:center;margin:40px 0 20px">
+    <h2 style="font-size:20px;font-weight:600;margin-bottom:4px">Device-Specific Previews</h2>
+    <p style="font-size:13px;color:var(--text-dim)">Optimized layouts for each device type. Open in the matching viewport for best results.</p>
+  </div>
+</div>
+
+<div class="grid" style="padding-bottom:80px">
+  <a class="card" href="08-desktop-preview.html" target="_blank" style="border-color:rgba(91,107,255,0.3);">
+    <div class="card-preview" style="background:#0A0B0F;position:relative;">
+      <div style="position:absolute;top:8px;right:8px;z-index:10;background:#5B6BFF;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.05em;">DESKTOP</div>
+      <iframe src="08-desktop-preview.html" scrolling="no"></iframe>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Device Preview</div>
+      <div class="card-title" style="color:#5B6BFF;">Desktop — 1200px+</div>
+      <div class="card-desc">Full sidebar (280px), top bar with search/notifications, 4-column stat grid, 7/5 split for personality+alert, 8/4 for chart+insights. 7 transaction rows. Hover states on all interactive elements.</div>
+      <div class="card-tags">
+        <span class="tag" style="color:#5B6BFF;border-color:rgba(91,107,255,0.2);background:rgba(91,107,255,0.06);">Fixed Sidebar</span>
+        <span class="tag" style="color:#5B6BFF;border-color:rgba(91,107,255,0.2);background:rgba(91,107,255,0.06);">4-Column Grid</span>
+        <span class="tag">Hover Glow</span>
+        <span class="tag">Custom Scrollbar</span>
+      </div>
+      <div class="card-link" style="color:#5B6BFF;">Open Preview</div>
+    </div>
+  </a>
+
+  <a class="card" href="09-tablet-preview.html" target="_blank" style="border-color:rgba(61,215,229,0.3);">
+    <div class="card-preview" style="background:#0A0B0F;position:relative;">
+      <div style="position:absolute;top:8px;right:8px;z-index:10;background:#3DD7E5;color:#000;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.05em;">TABLET</div>
+      <iframe src="09-tablet-preview.html" scrolling="no"></iframe>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Device Preview</div>
+      <div class="card-title" style="color:#3DD7E5;">Tablet — 768-1024px</div>
+      <div class="card-desc">Collapsible sidebar with hamburger toggle, 2-column stat grid, insights in 2-column grid, stacked layout below 834px. Overlay backdrop on sidebar open. Touch-friendly 44px targets.</div>
+      <div class="card-tags">
+        <span class="tag" style="color:#3DD7E5;border-color:rgba(61,215,229,0.2);background:rgba(61,215,229,0.06);">Hamburger Nav</span>
+        <span class="tag" style="color:#3DD7E5;border-color:rgba(61,215,229,0.2);background:rgba(61,215,229,0.06);">2-Column Grid</span>
+        <span class="tag">Overlay Sidebar</span>
+        <span class="tag">Touch Targets</span>
+      </div>
+      <div class="card-link" style="color:#3DD7E5;">Open Preview</div>
+    </div>
+  </a>
+
+  <a class="card" href="10-mobile-preview.html" target="_blank" style="border-color:rgba(43,224,140,0.3);">
+    <div class="card-preview" style="background:#0A0B0F;position:relative;">
+      <div style="position:absolute;top:8px;right:8px;z-index:10;background:#2BE08C;color:#000;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.05em;">MOBILE</div>
+      <iframe src="10-mobile-preview.html" scrolling="no"></iframe>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Device Preview</div>
+      <div class="card-title" style="color:#2BE08C;">Mobile — 375-430px</div>
+      <div class="card-desc">Bottom tab bar (Home/Analytics/Assets/Settings), horizontal-scroll stat cards, stacked single-column, scrollable insights, compact transactions. Safe area insets for notch devices.</div>
+      <div class="card-tags">
+        <span class="tag" style="color:#2BE08C;border-color:rgba(43,224,140,0.2);background:rgba(43,224,140,0.06);">Bottom Tab Bar</span>
+        <span class="tag" style="color:#2BE08C;border-color:rgba(43,224,140,0.2);background:rgba(43,224,140,0.06);">Horizontal Scroll</span>
+        <span class="tag">Safe Area Insets</span>
+        <span class="tag">Tap Feedback</span>
+      </div>
+      <div class="card-link" style="color:#2BE08C;">Open Preview</div>
+    </div>
+  </a>
+</div>
+</body>
+</html>

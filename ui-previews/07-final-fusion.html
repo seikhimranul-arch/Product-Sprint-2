@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FintLer — Clean Build</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0a;--s1:#111111;--s2:#1a1a1a;--s3:#222222;--s4:#2a2a2a;
+  --tx:#ededed;--tx2:#a1a1a1;--tx3:#717171;
+  --cyan:#00d4ff;--cyan-soft:rgba(0,212,255,0.08);--cyan-border:rgba(0,212,255,0.18);
+  --red:#ef4444;--red-soft:rgba(239,68,68,0.08);--red-border:rgba(239,68,68,0.18);
+  --green:#10b981;--amber:#f59e0b;
+  --border:rgba(255,255,255,0.06);--border-b:rgba(255,255,255,0.1);
+  --radius:12px;--radius-sm:8px;
+  --font:'Inter',-apple-system,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--tx);font-size:14px;-webkit-font-smoothing:antialiased}
+
+/* ══ LAYOUT ══ */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:240px;background:var(--s1);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;padding:24px 16px;display:flex;flex-direction:column;z-index:20;transition:transform .3s}
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.content{padding:32px;max-width:1200px;width:100%;margin:0 auto}
+
+/* Sidebar */
+.logo{font-size:18px;font-weight:800;letter-spacing:-0.03em;margin-bottom:32px;display:flex;align-items:center;gap:8px}
+.logo-mark{width:28px;height:28px;border-radius:8px;background:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--bg);font-weight:800}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px;margin-top:24px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);color:var(--tx2);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;margin-bottom:2px}
+.nav-item:hover{background:var(--s2);color:var(--tx)}
+.nav-item.active{background:var(--cyan-soft);color:var(--cyan)}
+.nav-item svg{width:18px;height:18px;opacity:.5;flex-shrink:0}
+.nav-item.active svg{opacity:1}
+.sidebar-spacer{flex:1}
+.sidebar-user{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--border)}
+.sidebar-avatar{width:32px;height:32px;border-radius:var(--radius-sm);background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--cyan)}
+.sidebar-user-text{line-height:1.3}
+.sidebar-user-name{font-size:13px;font-weight:600}
+.sidebar-user-email{font-size:11px;color:var(--tx3)}
+
+/* Hamburger */
+.burger{display:none;position:fixed;top:14px;left:14px;z-index:50;width:36px;height:36px;border-radius:var(--radius-sm);background:var(--s1);border:1px solid var(--border);cursor:pointer;align-items:center;justify-content:center;flex-direction:column;gap:4px}
+.burger i{display:block;width:16px;height:1.5px;background:var(--tx2);border-radius:2px;transition:all .25s}
+.shell.open .burger i:nth-child(1){transform:translateY(3px) rotate(45deg)}
+.shell.open .burger i:nth-child(2){opacity:0}
+.shell.open .burger i:nth-child(3){transform:translateY(-5px) rotate(-45deg)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:19}
+.shell.open .overlay{display:block}
+
+/* Header */
+.header{margin-bottom:28px}
+.header h1{font-size:24px;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px}
+.header h1 span{color:var(--cyan)}
+.header p{font-size:13px;color:var(--tx2)}
+.header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-cyan{background:var(--cyan-soft);color:var(--cyan);border:1px solid var(--cyan-border)}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Cards */
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g7{grid-template-columns:7fr 5fr}
+.g8{grid-template-columns:8fr 4fr}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .2s}
+.card:hover{border-color:var(--border-b)}
+.card-label{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px}
+.card-value{font-size:28px;font-weight:800;letter-spacing:-0.03em;line-height:1.1}
+.card-sub{font-size:12px;color:var(--tx2);margin-top:4px}
+
+/* Personality */
+.personality-row{display:flex;gap:16px;align-items:center}
+.personality-icon{width:48px;height:48px;border-radius:12px;background:var(--cyan-soft);border:1px solid var(--cyan-border);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.personality-name{font-size:16px;font-weight:700;margin-bottom:2px}
+.personality-desc{font-size:12px;color:var(--tx2);line-height:1.6}
+
+/* Alert */
+.alert-card{border-color:var(--red-border);background:var(--red-soft);position:relative;overflow:hidden}
+.alert-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 90% 20%,rgba(239,68,68,0.06),transparent 60%);pointer-events:none}
+.alert-title{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px}
+.alert-title .dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1.2s ease-in-out infinite}
+
+/* Goal */
+.goal-visual{display:flex;align-items:center;gap:16px}
+.goal-ring{width:64px;height:64px;position:relative;flex-shrink:0}
+.goal-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.goal-ring-bg{fill:none;stroke:var(--s3);stroke-width:5}
+.goal-ring-fill{fill:none;stroke:var(--cyan);stroke-width:5;stroke-linecap:round;animation:ringIn 1.2s ease-out both}
+@keyframes ringIn{from{stroke-dashoffset:176}to{stroke-dashoffset:67}}
+.goal-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--cyan)}
+.goal-amount{font-size:24px;font-weight:800;color:var(--cyan)}
+.goal-bar{height:4px;background:var(--s3);border-radius:2px;margin:10px 0;overflow:hidden}
+.goal-bar-fill{height:100%;width:62%;background:var(--cyan);border-radius:2px;animation:barGrow 1s ease-out .3s both}
+@keyframes barGrow{from{width:0}to{width:62%}}
+.goal-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--tx3)}
+
+/* Chart */
+.chart{height:160px;position:relative}
+.chart svg{width:100%;height:100%}
+
+/* Loading spinner */
+.spinner{display:flex;align-items:center;gap:8px;padding:16px 0;opacity:0;transition:opacity .2s}
+.spinner.on{opacity:1}
+.spinner svg{width:32px;height:32px}
+.spinner polyline{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.spinner #back{stroke:rgba(255,77,79,0.2)}
+.spinner #front{stroke:var(--red);stroke-dasharray:48,144;stroke-dashoffset:192;animation:dash 1.4s linear infinite}
+@keyframes dash{72.5%{opacity:0}to{stroke-dashoffset:0}}
+.spinner-text{font-size:11px;color:var(--tx3)}
+
+/* Tx */
+.tx-list{display:flex;flex-direction:column}
+.tx-row{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);gap:12px;transition:background .15s}
+.tx-row:last-child{border-bottom:none}
+.tx-row:hover{background:rgba(255,255,255,0.02)}
+.tx-icon{width:36px;height:36px;border-radius:var(--radius-sm);background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tx-info{flex:1;min-width:0}
+.tx-name{font-size:13px;font-weight:600}
+.tx-sub{font-size:11px;color:var(--tx3)}
+.tx-cat{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;background:var(--s2);color:var(--tx2);white-space:nowrap}
+.tx-amount{font-size:14px;font-weight:700;text-align:right;transition:all .2s cubic-bezier(.34,1.56,.64,1);cursor:default;white-space:nowrap}
+.tx-amount:hover{transform:scale(1.1);filter:brightness(1.2)}
+.tx-amount.debit{color:var(--tx)}
+.tx-amount.debit:hover{color:var(--red);text-shadow:0 0 10px rgba(239,68,68,0.2)}
+.tx-amount.credit{color:var(--cyan)}
+.tx-amount.credit:hover{color:var(--cyan);text-shadow:0 0 10px rgba(0,212,255,0.3)}
+.tx-type{font-size:10px;font-weight:600;letter-spacing:0.05em;color:var(--tx3);width:48px;text-align:center;flex-shrink:0}
+
+/* Insight */
+.insight{border-left:2px solid;padding-left:12px;margin-bottom:16px}
+.insight:last-child{margin-bottom:0}
+.insight h4{font-size:12px;font-weight:700;margin-bottom:2px}
+.insight p{font-size:11px;color:var(--tx2);line-height:1.5}
+
+/* Feed */
+.feed{overflow:hidden;margin-bottom:20px;position:relative}
+.feed::before,.feed::after{content:'';position:absolute;top:0;bottom:0;width:40px;z-index:1;pointer-events:none}
+.feed::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+.feed::after{right:0;background:linear-gradient(-90deg,var(--bg),transparent)}
+.feed-track{display:flex;gap:8px;width:max-content;animation:scroll 25s linear infinite}
+.feed-track:hover{animation-play-state:paused}
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.feed-pill{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:var(--s1);border:1px solid var(--border);font-size:11px;color:var(--tx2);white-space:nowrap}
+.feed-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--tx2);transition:all .15s;font-family:var(--font)}
+.btn:hover{background:var(--s2);color:var(--tx);border-color:var(--border-b)}
+.btn-cyan{color:var(--cyan);border-color:var(--cyan-border);background:var(--cyan-soft)}
+.btn-cyan:hover{background:rgba(0,212,255,0.14)}
+
+/* Time tabs */
+.time-tabs{display:flex;gap:4px}
+
+/* ══════════════════
+   RESPONSIVE
+   ══════════════════ */
+@media(max-width:1024px){
+  .sidebar{transform:translateX(-100%)}
+  .shell.open .sidebar{transform:translateX(0)}
+  .main{margin-left:0}
+  .burger{display:flex}
+  .content{padding:24px 20px}
+  .g7,.g8{grid-template-columns:1fr}
+  .g4{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:640px){
+  .content{padding:16px 14px}
+  .header h1{font-size:20px}
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  .personality-row{flex-direction:column;text-align:center;gap:12px}
+  .goal-visual{flex-direction:column;text-align:center}
+  .goal-ring{width:56px;height:56px}
+  .goal-amount{font-size:20px}
+  .card-value{font-size:24px}
+  .tx-type{display:none}
+  .tx-icon{width:32px;height:32px;font-size:14px}
+  .tx-row{padding:12px 0;gap:10px}
+  .chart{height:120px}
+  .time-tabs .btn{padding:5px 10px;font-size:10px}
+}
+</style>
+</head>
+<body>
+<div class="shell" id="shell">
+  <button class="burger" onclick="document.getElementById('shell').classList.toggle('open')"><i></i><i></i><i></i></button>
+  <div class="overlay" onclick="document.getElementById('shell').classList.remove('open')"></div>
+
+  <aside class="sidebar">
+    <div class="logo"><div class="logo-mark">F</div> FintLer</div>
+    <div class="nav-label">Overview</div>
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Analytics
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+      Assets
+    </div>
+    <div class="nav-label">System</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/></svg>
+      Settings
+    </div>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">AK</div>
+      <div class="sidebar-user-text">
+        <div class="sidebar-user-name">Arjun Kumar</div>
+        <div class="sidebar-user-email">arjun.k@fintler.app</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="content">
+      <!-- Header -->
+      <div class="header">
+        <div class="header-row">
+          <div>
+            <h1>Good evening, <span>Arjun</span></h1>
+            <p>Here's where your money went this week.</p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="badge badge-cyan"><span class="badge-dot"></span> Gmail Live</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feed -->
+      <div class="feed">
+        <div class="feed-track">
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--cyan)"></div>Swiggy · ₹780 · 11:42 PM</div>
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--tx3)"></div>Uber · ₹320 · 6:15 PM</div>
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--amber)"></div>PVR · ₹560 · Yesterday</div>
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--green)"></div>TCS · +₹85,000 · Jul 18</div>
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--tx3)"></div>BigBasket · ₹1,850 · Yesterday</div>
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--tx3)"></div>Netflix · ₹499 · Jul 17</div>
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--cyan)"></div>Swiggy · ₹780 · 11:42 PM</div>
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--tx3)"></div>Uber · ₹320 · 6:15 PM</div>
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--amber)"></div>PVR · ₹560 · Yesterday</div>
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--green)"></div>TCS · +₹85,000 · Jul 18</div>
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--tx3)"></div>BigBasket · ₹1,850 · Yesterday</div>
+          <div class="feed-pill"><div class="feed-dot" style="background:var(--tx3)"></div>Netflix · ₹499 · Jul 17</div>
+        </div>
+      </div>
+
+      <!-- Row 1: Personality + Alert -->
+      <div class="grid g7" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-label">Spending Personality</div>
+          <div class="personality-row">
+            <div class="personality-icon">🎯</div>
+            <div>
+              <div class="personality-name">The Weekend Warrior</div>
+              <div class="personality-desc">62% of discretionary spend on weekends. Peak: Friday 10 PM – midnight. Primary trigger: late-night food delivery at ₹4,200/mo.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card alert-card">
+          <div class="alert-title"><span class="dot"></span> AI Alert</div>
+          <div class="card-value" style="color:var(--red);font-size:22px;margin-bottom:4px">EMI at 20% of Income</div>
+          <div class="card-sub">HDFC auto-debit ₹8,500/mo on ₹85K salary. Prepay ₹20K to save ₹1,200 interest.</div>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn btn-cyan">View Details →</button>
+            <button class="btn">Dismiss</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Stats -->
+      <div class="grid g4" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-label">Total Debits</div>
+          <div class="card-value" style="color:var(--cyan)">₹42,500</div>
+          <div class="card-sub">127 txs · 30 days</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Top Category</div>
+          <div class="card-value">Food</div>
+          <div class="card-sub">₹16,200 · 38.1%</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Weekly Goal</div>
+          <div class="goal-visual">
+            <div class="goal-ring">
+              <svg viewBox="0 0 64 64"><circle class="goal-ring-bg" cx="32" cy="32" r="28"/><circle class="goal-ring-fill" cx="32" cy="32" r="28" stroke-dasharray="176" stroke-dashoffset="67"/></svg>
+              <div class="goal-pct">62%</div>
+            </div>
+            <div>
+              <div class="goal-amount">₹5,000</div>
+              <div class="card-sub">4 days left</div>
+            </div>
+          </div>
+          <div class="goal-bar"><div class="goal-bar-fill"></div></div>
+          <div class="goal-labels"><span>₹3,100 spent</span><span>₹1,900 left</span></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Gmail Sync</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <div class="badge-dot" style="background:var(--green);animation:pulse 2s infinite"></div>
+            <span style="font-size:13px;font-weight:600;color:var(--green)">Connected</span>
+          </div>
+          <div class="card-sub">Last sync: 2 min ago</div>
+          <div class="card-sub">147 transactions</div>
+          <div style="margin-top:10px;display:flex;gap:6px">
+            <button class="btn btn-cyan" id="refreshBtn">Refresh</button>
+            <button class="btn">Disconnect</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Chart + Insights -->
+      <div class="grid g8" style="margin-bottom:16px">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div class="card-label" style="margin-bottom:0">Spending Trend</div>
+            <div class="time-tabs">
+              <button class="btn">7D</button>
+              <button class="btn btn-cyan">30D</button>
+              <button class="btn">90D</button>
+            </div>
+          </div>
+          <div class="card-value" style="color:var(--cyan);margin-bottom:2px">₹42,500</div>
+          <div class="card-sub" style="margin-bottom:8px">Down 8.2% from last month</div>
+          <!-- Spinner (hidden) -->
+          <div class="spinner" id="spinner">
+            <svg viewBox="0 0 48 48"><polyline id="back" points="4,24 12,24 16,14 24,34 32,14 36,24 44,24"/><polyline id="front" points="4,24 12,24 16,14 24,34 32,14 36,24 44,24"/></svg>
+            <span class="spinner-text">Syncing transactions...</span>
+          </div>
+          <div class="chart">
+            <svg viewBox="0 0 500 120" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(0,212,255,0.15)"/>
+                  <stop offset="100%" stop-color="rgba(0,212,255,0)"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,100 C40,95 70,55 120,65 C170,75 200,35 250,45 C300,55 340,25 380,35 C420,45 460,18 500,28 L500,120 L0,120Z" fill="url(#cg)"/>
+              <path d="M0,100 C40,95 70,55 120,65 C170,75 200,35 250,45 C300,55 340,25 380,35 C420,45 460,18 500,28" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+              <circle cx="500" cy="28" r="3" fill="var(--cyan)"/>
+            </svg>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px">
+            <span style="font-size:10px;color:var(--tx3)">Jul 1</span>
+            <span style="font-size:10px;color:var(--tx3)">Jul 10</span>
+            <span style="font-size:10px;color:var(--tx3)">Jul 20</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Insights</div>
+          <div class="insight" style="border-color:var(--cyan)">
+            <h4 style="color:var(--cyan)">Weekend Surge</h4>
+            <p>Fri–Sun spend is 3.2× weekdays. Late-night food = ₹4,200/mo.</p>
+          </div>
+          <div class="insight" style="border-color:var(--amber)">
+            <h4 style="color:var(--amber)">Subscription Bleed</h4>
+            <p>4 streaming services = ₹1,216/mo. Consider pausing one.</p>
+          </div>
+          <div class="insight" style="border-color:var(--green)">
+            <h4 style="color:var(--green)">Grocery Win</h4>
+            <p>₹6,500/mo — consistent and well-controlled.</p>
+          </div>
+          <div class="insight" style="border-color:var(--red)">
+            <h4 style="color:var(--red)">EMI Warning</h4>
+            <p>20% of take-home. Target &lt;15%.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transactions -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div class="card-label" style="margin-bottom:0">Recent Transactions</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn">Export</button>
+            <button class="btn btn-cyan">View All →</button>
+          </div>
+        </div>
+        <div class="tx-list">
+          <div class="tx-row">
+            <div class="tx-icon" style="background:var(--red-soft)">🍔</div>
+            <div class="tx-info"><div class="tx-name">Swiggy</div><div class="tx-sub">Late night order</div></div>
+            <div class="tx-cat">Food</div>
+            <div class="tx-type">DEBIT</div>
+            <div class="tx-amount debit">−₹780</div>
+          </div>
+          <div class="tx-row">
+            <div class="tx-icon" style="background:var(--cyan-soft)">🚗</div>
+            <div class="tx-info"><div class="tx-name">Uber</div><div class="tx-sub">Office → Home</div></div>
+            <div class="tx-cat">Transport</div>
+            <div class="tx-type">DEBIT</div>
+            <div class="tx-amount debit">−₹320</div>
+          </div>
+          <div class="tx-row">
+            <div class="tx-icon" style="background:rgba(245,158,11,0.08)">🎬</div>
+            <div class="tx-info"><div class="tx-name">PVR Cinemas</div><div class="tx-sub">Weekend movie</div></div>
+            <div class="tx-cat">Entertainment</div>
+            <div class="tx-type">DEBIT</div>
+            <div class="tx-amount debit">−₹560</div>
+          </div>
+          <div class="tx-row">
+            <div class="tx-icon" style="background:var(--s2)">🛒</div>
+            <div class="tx-info"><div class="tx-name">BigBasket</div><div class="tx-sub">Weekly groceries</div></div>
+            <div class="tx-cat">Groceries</div>
+            <div class="tx-type">DEBIT</div>
+            <div class="tx-amount debit">−₹1,850</div>
+          </div>
+          <div class="tx-row">
+            <div class="tx-icon" style="background:var(--cyan-soft)">💼</div>
+            <div class="tx-info"><div class="tx-name">TCS</div><div class="tx-sub">Monthly salary</div></div>
+            <div class="tx-cat" style="color:var(--cyan)">Income</div>
+            <div class="tx-type" style="color:var(--cyan)">CREDIT</div>
+            <div class="tx-amount credit">+₹85,000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+document.getElementById('refreshBtn').addEventListener('click',()=>{
+  const s=document.getElementById('spinner');
+  s.classList.add('on');
+  setTimeout(()=>s.classList.remove('on'),2000);
+});
+</script>
+</body>
+</html>
